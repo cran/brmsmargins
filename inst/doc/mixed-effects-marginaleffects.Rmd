@@ -19,7 +19,17 @@ vignette: >
 ```r
 library(knitr)
 library(data.table)
+#> data.table 1.14.2 using 24 threads (see ?getDTthreads).  Latest news: r-datatable.com
 library(brms)
+#> Loading required package: Rcpp
+#> Loading 'brms' package (version 2.17.0). Useful instructions
+#> can be found by typing help('brms'). A more detailed introduction
+#> to the package is available through vignette('brms_overview').
+#> 
+#> Attaching package: 'brms'
+#> The following object is masked from 'package:stats':
+#> 
+#>     ar
 library(brmsmargins)
 ```
 
@@ -134,7 +144,7 @@ Because of the complexity involved, only limited types of mixed effects
 models are supported.
 
 
-## AMEs for Mixed Effects Logistic Regression
+## Mixed Effects Logistic Regression
 
 We will simulate some multilevel binary data for our 
 mixed effects logistic regression model with individual differences
@@ -174,36 +184,42 @@ mlogit <- brms::brm(
   silent = 2, refresh = 0,
   chains = 4L, cores = 4L, backend = "cmdstanr")
 #> Compiling Stan program...
+#> Warning: 25 of 4000 (1.0%) transitions ended with a divergence.
+#> See https://mc-stan.org/misc/warnings for details.
 ```
 
 
 
 ```r
 summary(mlogit)
+#> Warning: There were 25 divergent transitions after warmup. Increasing
+#> adapt_delta above may help. See http://mc-stan.org/misc/warnings.html#divergent-
+#> transitions-after-warmup
 #>  Family: bernoulli 
 #>   Links: mu = logit 
 #> Formula: y ~ 1 + x + (1 + x | ID) 
 #>    Data: d (Number of observations: 2000) 
-#>   Draws: 4 chains, each with iter = 1000; warmup = 0; thin = 1;
+#>   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 #>          total post-warmup draws = 4000
 #> 
 #> Group-Level Effects: 
 #> ~ID (Number of levels: 100) 
 #>                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)        1.18      0.19     0.85     1.59 1.00     1371     2302
-#> sd(x)                0.53      0.28     0.04     1.07 1.01      338     1039
-#> cor(Intercept,x)    -0.18      0.42    -0.83     0.81 1.00     1444     1313
+#> sd(Intercept)        1.17      0.19     0.85     1.58 1.01     1038     1913
+#> sd(x)                0.53      0.28     0.03     1.11 1.03      223      409
+#> cor(Intercept,x)    -0.16      0.42    -0.81     0.82 1.01     1403     1047
 #> 
 #> Population-Level Effects: 
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept    -2.47      0.19    -2.87    -2.13 1.00     1678     2281
-#> x             0.95      0.19     0.60     1.33 1.00     3021     2803
+#> Intercept    -2.47      0.20    -2.89    -2.10 1.01     1116     1292
+#> x             0.95      0.18     0.59     1.34 1.00     2152     2024
 #> 
 #> Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
 
+### AMEs
 
 Now we can use `brmsmargins()`. By default, it will 
 only use the fixed effects. To integrate out random effects,
@@ -228,7 +244,7 @@ knitr::kable(ame1$ContrastSummary, digits = 3)
 
 |     M|   Mdn|    LL|    UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
 |-----:|-----:|-----:|-----:|-----------:|----------:|----:|:------|:----|:---|:-----|
-| 0.111| 0.111| 0.058| 0.168|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
+| 0.112| 0.112| 0.063| 0.169|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
 
 We can follow a similar process getting discrete predictions at 
 x held at 0 or 1. In this instance, the summary of 
@@ -256,8 +272,8 @@ knitr::kable(ame2$Summary, digits = 3)
 
 |     M|   Mdn|    LL|    UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |
 |-----:|-----:|-----:|-----:|-----------:|----------:|----:|:------|:----|:---|
-| 0.119| 0.118| 0.076| 0.174|          NA|         NA| 0.99|HDI    |NA   |NA  |
-| 0.230| 0.229| 0.163| 0.306|          NA|         NA| 0.99|HDI    |NA   |NA  |
+| 0.120| 0.118| 0.071| 0.174|          NA|         NA| 0.99|HDI    |NA   |NA  |
+| 0.231| 0.231| 0.157| 0.302|          NA|         NA| 0.99|HDI    |NA   |NA  |
 
 
 ```r
@@ -266,9 +282,9 @@ knitr::kable(ame2$ContrastSummary, digits = 3)
 
 
 
-|     M|  Mdn|    LL|    UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
-|-----:|----:|-----:|-----:|-----------:|----------:|----:|:------|:----|:---|:-----|
-| 0.111| 0.11| 0.061| 0.172|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
+|     M|   Mdn|   LL|    UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
+|-----:|-----:|----:|-----:|-----------:|----------:|----:|:------|:----|:---|:-----|
+| 0.111| 0.111| 0.06| 0.169|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
 
 
 ```r
@@ -312,9 +328,9 @@ knitr::kable(ame.error$ContrastSummary, digits = 3)
 
 
 
-|      M|    Mdn|       LL|      UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
-|------:|------:|--------:|-------:|-----------:|----------:|----:|:------|:----|:---|:-----|
-| -0.679| -0.951| -165.694| 169.524|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
+|      M|   Mdn|       LL|      UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
+|------:|-----:|--------:|-------:|-----------:|----------:|----:|:------|:----|:---|:-----|
+| -0.703| -0.98| -162.906| 172.759|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
 
 This disappears when we use the same seed for each row of the data 
 used for predictions. Here we get all zeros for the difference, as 
@@ -340,7 +356,48 @@ knitr::kable(ame.noerror$ContrastSummary, digits = 3)
 |--:|---:|--:|--:|-----------:|----------:|----:|:------|:----|:---|:-----|
 |  0|   0|  0|  0|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
 
-## AMEs for Mixed Effects Poisson Regression
+### Marginal Coefficients
+
+The fixed effects coefficients are conditional on the random effects.
+To aide interpretation, we also can calculate marginal coefficients or 
+population averaged coefficients. The function to do this is 
+`marginalcoef()` which uses the method described by Hedeker and colleagues
+(2018). Here is an example and comparison to results using a single level 
+logistic regression that ignores the clustering in the data.
+
+
+```r
+## calculate marginal coefficients
+mc.logit <- marginalcoef(mlogit, CI = 0.95)
+
+## calculate single level logistic regression
+glm.logit <- glm(y ~ 1 + x, family = "binomial", data = d)
+glm.logit <- as.data.table(cbind(Est = coef(glm.logit), confint(glm.logit)))
+#> Waiting for profiling to be done...
+```
+
+Now we can view and compare the results.
+
+
+```r
+
+knitr::kable(cbind(
+  mc.logit$Summary[, .(
+    MargCoef = sprintf("%0.3f", round(M, 3)),
+    MargCoefCI = sprintf("[%0.3f, %0.3f]", round(LL, 3), round(UL, 3)))],
+  glm.logit[, .(
+    GLMCoef = sprintf("%0.3f", round(Est, 3)),
+    GLMCI = sprintf("[%0.3f, %0.3f]", round(`2.5 %`, 3), round(`97.5 %`, 3)))]))
+```
+
+
+
+|MargCoef |MargCoefCI       |GLMCoef |GLMCI            |
+|:--------|:----------------|:-------|:----------------|
+|-2.010   |[-2.386, -1.666] |-2.021  |[-2.219, -1.833] |
+|0.800    |[0.520, 1.083]   |0.802   |[0.561, 1.047]   |
+
+## Mixed Effects Poisson Regression
 
 We will simulate some multilevel poisson data for our 
 mixed effects poisson regression model with individual differences
@@ -377,46 +434,38 @@ mpois <- brms::brm(
   y ~ 1 + x + (1 + x | ID), family = "poisson",
   data = dpoisson, seed = 1234,
   chains = 4L, cores = 4L, backend = "cmdstanr",
-  silent = 2, refresh = 0)
+  silent = 2, refresh = 0, adapt_delta = 0.99)
 #> Compiling Stan program...
-#> 
-#> Warning: 9 of 4000 (0.0%) transitions ended with a divergence.
-#> This may indicate insufficient exploration of the posterior distribution.
-#> Possible remedies include: 
-#>   * Increasing adapt_delta closer to 1 (default is 0.8) 
-#>   * Reparameterizing the model (e.g. using a non-centered parameterization)
-#>   * Using informative or weakly informative prior distributions
 ```
 
 
 ```r
 summary(mpois)
-#> Warning: There were 9 divergent transitions after warmup. Increasing adapt_delta
-#> above may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-
-#> after-warmup
 #>  Family: poisson 
 #>   Links: mu = log 
 #> Formula: y ~ 1 + x + (1 + x | ID) 
 #>    Data: dpoisson (Number of observations: 2000) 
-#>   Draws: 4 chains, each with iter = 1000; warmup = 0; thin = 1;
+#>   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 #>          total post-warmup draws = 4000
 #> 
 #> Group-Level Effects: 
 #> ~ID (Number of levels: 100) 
 #>                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)        1.18      0.15     0.91     1.50 1.00     1064     1495
-#> sd(x)                0.36      0.19     0.02     0.75 1.02      250      711
-#> cor(Intercept,x)    -0.04      0.41    -0.73     0.85 1.01     1426     1516
+#> sd(Intercept)        1.18      0.15     0.91     1.52 1.00     1353     2327
+#> sd(x)                0.36      0.20     0.02     0.75 1.01      308      949
+#> cor(Intercept,x)    -0.06      0.41    -0.75     0.85 1.00     1680     1536
 #> 
 #> Population-Level Effects: 
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept    -2.46      0.18    -2.82    -2.13 1.00     1338     1819
-#> x             0.97      0.15     0.67     1.27 1.00     2419     2022
+#> Intercept    -2.47      0.17    -2.82    -2.14 1.00     1777     2484
+#> x             0.97      0.15     0.68     1.27 1.00     3307     2893
 #> 
 #> Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
+
+### AMEs
 
 We use `brmsmargins()` in the same way as for the mixed effects logistic regression.
 Here is an example with a numeric derivative treating `x` as continuous.
@@ -435,9 +484,9 @@ knitr::kable(ame1.pois$ContrastSummary, digits = 3)
 
 
 
-|     M|   Mdn|    LL|    UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
-|-----:|-----:|-----:|-----:|-----------:|----------:|----:|:------|:----|:---|:-----|
-| 0.333| 0.311| 0.134| 0.729|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
+|     M|   Mdn|   LL|    UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
+|-----:|-----:|----:|-----:|-----------:|----------:|----:|:------|:----|:---|:-----|
+| 0.332| 0.312| 0.14| 0.731|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
 
 Here is an example treating `x` as discrete.
 
@@ -454,12 +503,52 @@ knitr::kable(ame2.pois$ContrastSummary)
 
 
 
-|         M|       Mdn|        LL|        UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
-|---------:|---------:|---------:|---------:|-----------:|----------:|----:|:------|:----|:---|:-----|
-| 0.2954291| 0.2792047| 0.1133311| 0.6067961|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
+|        M|       Mdn|        LL|        UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
+|--------:|---------:|---------:|---------:|-----------:|----------:|----:|:------|:----|:---|:-----|
+| 0.294537| 0.2780058| 0.1076343| 0.5973478|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
+
+### Marginal Coefficients
+
+Just as for mixed effects logistic regression, 
+we can calculate marginal or population averaged coefficients for 
+mixed effects poisson regression using the same process as described 
+by Hedeker and colleagues (2018).
+Here is an example and comparison to results using a single level 
+poisson regression that ignores the clustering in the data.
 
 
-## AMEs for Mixed Effects Negative Binomial Regression
+```r
+## calculate marginal coefficients
+mc.pois <- marginalcoef(mpois, CI = 0.95)
+
+## calculate single level logistic regression
+glm.pois <- glm(y ~ 1 + x, family = "poisson", data = d)
+glm.pois <- as.data.table(cbind(Est = coef(glm.pois), confint(glm.pois)))
+#> Waiting for profiling to be done...
+```
+
+Now we can view and compare the results.
+
+
+```r
+
+knitr::kable(cbind(
+  mc.pois$Summary[, .(
+    MargCoef = sprintf("%0.3f", round(M, 3)),
+    MargCoefCI = sprintf("[%0.3f, %0.3f]", round(LL, 3), round(UL, 3)))],
+  glm.pois[, .(
+    GLMCoef = sprintf("%0.3f", round(Est, 3)),
+    GLMCI = sprintf("[%0.3f, %0.3f]", round(`2.5 %`, 3), round(`97.5 %`, 3)))]))
+```
+
+
+
+|MargCoef |MargCoefCI       |GLMCoef |GLMCI            |
+|:--------|:----------------|:-------|:----------------|
+|-1.765   |[-2.218, -1.239] |-1.858  |[-2.019, -1.705] |
+|0.987    |[0.697, 1.279]   |0.983   |[0.802, 1.170]   |
+
+## Mixed Effects Negative Binomial Regression
 
 Negative binomial models work the same way as for poisson models.
 We use the same dataset, just for demonstration.
@@ -470,50 +559,42 @@ mnb <- brms::brm(
   y ~ 1 + x + (1 + x | ID), family = "negbinomial",
   data = dpoisson, seed = 1234,
   chains = 4L, cores = 4L, backend = "cmdstanr",
-  silent = 2, refresh = 0)
+  silent = 2, refresh = 0, adapt_delta = 0.99)
 #> Compiling Stan program...
-#> 
-#> Warning: 36 of 4000 (1.0%) transitions ended with a divergence.
-#> This may indicate insufficient exploration of the posterior distribution.
-#> Possible remedies include: 
-#>   * Increasing adapt_delta closer to 1 (default is 0.8) 
-#>   * Reparameterizing the model (e.g. using a non-centered parameterization)
-#>   * Using informative or weakly informative prior distributions
 ```
 
 
 ```r
 summary(mnb)
-#> Warning: There were 36 divergent transitions after warmup. Increasing
-#> adapt_delta above may help. See http://mc-stan.org/misc/warnings.html#divergent-
-#> transitions-after-warmup
 #>  Family: negbinomial 
 #>   Links: mu = log; shape = identity 
 #> Formula: y ~ 1 + x + (1 + x | ID) 
 #>    Data: dpoisson (Number of observations: 2000) 
-#>   Draws: 4 chains, each with iter = 1000; warmup = 0; thin = 1;
+#>   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 #>          total post-warmup draws = 4000
 #> 
 #> Group-Level Effects: 
 #> ~ID (Number of levels: 100) 
 #>                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)        1.18      0.15     0.91     1.49 1.00      685     1459
-#> sd(x)                0.36      0.20     0.02     0.75 1.03      258      552
-#> cor(Intercept,x)    -0.06      0.42    -0.76     0.85 1.01     1323     1070
+#> sd(Intercept)        1.19      0.15     0.93     1.51 1.01      975     1816
+#> sd(x)                0.35      0.20     0.01     0.74 1.01      252      821
+#> cor(Intercept,x)    -0.07      0.41    -0.77     0.84 1.00     1432     1277
 #> 
 #> Population-Level Effects: 
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept    -2.47      0.18    -2.85    -2.13 1.00      772     1423
-#> x             0.97      0.15     0.67     1.28 1.00     1850     1493
+#> Intercept    -2.46      0.18    -2.83    -2.14 1.00     1057     1993
+#> x             0.98      0.15     0.70     1.28 1.00     2711     2153
 #> 
 #> Family Specific Parameters: 
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> shape    63.13     65.94     8.01   252.42 1.00     3422     2603
+#> shape    61.06     63.22     8.15   243.02 1.00     5885     2745
 #> 
 #> Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
+
+### AMEs
 
 We use `brmsmargins()` in the same way as for the mixed effects poisson regression.
 Here is an example with a numeric derivative treating `x` as continuous.
@@ -532,9 +613,9 @@ knitr::kable(ame1.nb$ContrastSummary, digits = 3)
 
 
 
-|    M|   Mdn|    LL|    UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
-|----:|-----:|-----:|-----:|-----------:|----------:|----:|:------|:----|:---|:-----|
-| 0.33| 0.312| 0.137| 0.689|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
+|     M|   Mdn|    LL|    UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
+|-----:|-----:|-----:|-----:|-----------:|----------:|----:|:------|:----|:---|:-----|
+| 0.335| 0.313| 0.141| 0.777|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
 
 Here is an example treating `x` as discrete.
 
@@ -551,6 +632,537 @@ knitr::kable(ame2.nb$ContrastSummary, digits = 3)
 
 
 
-|     M|   Mdn|    LL|   UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
-|-----:|-----:|-----:|----:|-----------:|----------:|----:|:------|:----|:---|:-----|
-| 0.292| 0.279| 0.125| 0.59|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
+|     M|  Mdn|    LL|    UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label |
+|-----:|----:|-----:|-----:|-----------:|----------:|----:|:------|:----|:---|:-----|
+| 0.298| 0.28| 0.141| 0.662|          NA|         NA| 0.99|HDI    |NA   |NA  |AME x |
+
+### Marginal Coefficients
+
+Negative binomial models cannot be fit by the `glm()` function in `R`
+so we just show the population averaged values from `brms`.
+
+
+```r
+## calculate marginal coefficients
+mc.nb <- marginalcoef(mnb, CI = 0.95)
+```
+
+View the results.
+
+
+```r
+knitr::kable(
+  mc.nb$Summary[, .(
+    MargCoef = sprintf("%0.3f", round(M, 3)),
+    MargCoefCI = sprintf("[%0.3f, %0.3f]", round(LL, 3), round(UL, 3)))])
+```
+
+
+
+|MargCoef |MargCoefCI       |
+|:--------|:----------------|
+|-1.759   |[-2.225, -1.234] |
+|0.988    |[0.725, 1.283]   |
+
+## Centered Categorical Predictors
+
+In mixed effects models, it is common to center continuous predictors.
+Consider a longitudinal study where sleep was collected nightly for a week
+in multiple people. Hours of sleep duration will have variation that 
+exists between people (different people have different typical or average 
+sleep durations) and within people (the same person will sleep different 
+amounts on different nights).
+
+Entering observed hours of sleep duration as a predictor in the model will 
+conflate associations between sleep duration and the outcome that exist 
+at the between person and within person level.
+
+Here is a small example for two people with observed sleep ("Sleep"), the between
+person component, the average sleep per person ("BSleep"), and 
+the within person sleep, the person centered sleep duration ("WSleep").
+
+| ID | Sleep | BSleep | WSleep |
+|:--:|:-----:|:------:|:------:|
+| 1  | 6     | 7      | -1     |
+| 1  | 7     | 7      | 0      |
+| 1  | 8     | 7      | +1     |
+| 2  | 4     | 5      | -1     |
+| 2  | 5     | 5      | 0      |
+| 2  | 6     | 5      | +1     |
+
+These values are obtained by averaging the observed sleep values by ID.
+Then by taking the difference between the observed sleep duration values 
+and the between person mean sleep values, thus:
+
+$$
+WSleep = Sleep - BSleep
+$$
+
+Both `BSleep` and `WSleep` could be included as predictor variables in a model,
+or if the interest is solely in the within person association, `WSleep` only
+included.
+
+This type of centering is relatively common in mixed effects or multilevel models,
+at least for continuous predictors. The presence, or absence, of such centering
+for continuous variables has relatively little bearing on calculating the 
+average marginal effects (AMEs) as generally both variables remain continuous 
+and a derivative makes sense.
+
+In contrast to continuous predictors where it is common, it is relatively 
+*un*common to center categorical predictors. However, research 
+(Yaremych, Preacher, & Hedeker, 2021) highlights how the same rationale 
+that apply to continuous predictors, in regards to the benefits of centering,
+equally apply to categorical predictors. 
+One area where particular attention has been paid to the importance 
+of centering, whether continuous or categorical predictors,
+are in individual participant data meta analyses (IPDMA) with one stage analyses.
+In these IPDMA where there are treatment x covariate interactions to evaluate 
+effect modifiers, centering the predictor / covariate is critical for 
+avoiding 'ecological bias' (Hua et al., 2017).
+
+Yaremych et al (2021) showed that an equivalent algebraic approach to 
+creating centered continuous variables can be applied to categorical variables, 
+after coding (e.g., using dummy coding). In the same study used for the 
+continuous example, suppose that whether or not people had a good night's
+sleep was recorded dummy coded as yes = 1 and no = 0. 
+This table shows how it might be centered.
+
+| ID | GoodSleep | BSleep | WSleep |
+|:--:|:---------:|:------:|:------:|
+| 1  | 0         | 0.50   | -0.50  |
+| 1  | 0         | 0.50   | -0.50  |
+| 1  | 1         | 0.50   | +0.50  |
+| 1  | 1         | 0.50   | +0.50  |
+| 2  | 0         | 0.75   | -0.75  |
+| 2  | 1         | 0.75   | +0.25  |
+| 2  | 1         | 0.75   | +0.25  |
+| 2  | 1         | 0.75   | +0.25  |
+| 3  | 0         | 0      | 0      |
+| 3  | 0         | 0      | 0      |
+| 3  | 0         | 0      | 0      |
+| 3  | 0         | 0      | 0      |
+
+We can include these new variables as predictors in a model just as any other 
+predictors. However, in contrast to the continuous case where for the AMEs we 
+tend to calculate a derivative, the categorical case is more challenging.
+Typically, for categorical variables, AMEs are calculated as the 
+AME moving from one category to another category.
+This can easily be accomplished in `brmsmargins` using the `at` argument.
+However, when a categorical variable is centered by ID, the values
+for one category are not constant by ID.
+
+To address, this, `brmsmargins` implements an additional argument, `wat` 
+for within level `at`. This argument is used to give the values to be used 
+at each ID level. The `wat` argument is used in conjuction with the `at` argument.
+The `at` argument continues to be used for the general setup, with `wat` used 
+for the specific values.
+
+This is more easily shown than said. Here we simulate some multilevel data
+with a binary predictor, `x` and a binary outcome, `y`.
+
+
+```r
+d <- withr::with_seed(
+  seed = 12345, code = {
+    nGroups <- 100
+    nObs <- 20
+    theta.location <- matrix(rnorm(nGroups * 2), nrow = nGroups, ncol = 2)
+    theta.location[, 1] <- theta.location[, 1] - mean(theta.location[, 1])
+    theta.location[, 2] <- theta.location[, 2] - mean(theta.location[, 2])
+    theta.location[, 1] <- theta.location[, 1] / sd(theta.location[, 1])
+    theta.location[, 2] <- theta.location[, 2] / sd(theta.location[, 2])
+    theta.location <- theta.location %*% chol(matrix(c(1.5, -.25, -.25, .5^2), 2))
+    theta.location[, 1] <- theta.location[, 1] - 2.5
+    theta.location[, 2] <- theta.location[, 2] + 1
+
+    d <- data.table(ID = seq_len(nGroups))
+    d <- d[, .(x = rbinom(n = nObs, size = 1, prob = runif(1, 0, 1))), by = ID]
+
+    for (i in seq_len(nGroups)) {
+      d[ID == i, y := rbinom(
+        n = nObs,
+        size = 1,
+        prob = plogis(theta.location[i, 1] + theta.location[i, 2] * x))
+        ]
+    }
+    copy(d)
+  })
+```
+
+Now we can create a between and within person version of `x`,
+which we will call `xb` and `xw`. We also fit the `brms` model, using
+`xw`. In this instance we are not interested in any between person effects,
+so that variable is omitted. Any variation not explained by it will go into 
+the random intercept, anyways.
+
+
+```r
+## within person centering binary predictor
+d[, xb := mean(x), by = ID]
+d[, xw := x - xb]
+
+mlogitcent <- brms::brm(
+  y ~ 1 + xw + (1 + xw | ID), family = "bernoulli",
+  data = d, seed = 1234,
+  silent = 2, refresh = 0,
+  chains = 4L, cores = 4L, backend = "cmdstanr")
+#> Compiling Stan program...
+```
+
+Now comes the new part. Based on how we coded our predictor, `x`,
+we will create the two values by ID. In this case, `x` was coded 
+as 0 and 1. So we start with 0 as the low value and 1 as the high value.
+Then we need to take the difference between 0 and 1 with the mean 
+by ID. We (arbitrarily) label these `a` and `b`.
+We could have chosen any label, `min` and `max` or `low` and `high` or
+whatever we wanted. It just needs to be distinct and something that 
+`brmsmargins()` can match between the `at` and the `wat` arguments.
+The resulting data get turned into a single long `data.table`,
+called `xwid`. We use this to create a list, saved as `usewat`.
+The list must have two elements at a minimum:
+
+1. A named element, named "ID" that contains a character string with
+   the name of the ID variable.
+2. An element named after the centered variable, with a `data.frame` 
+   or `data.table` containing the values to use for each ID and
+   for each label we chose, here `a` and `b`.
+   
+The table shows a few examples of what the dataset looks like.
+
+
+```r
+
+xwid <- melt(
+  d[, .(a = 0 - na.omit(xb)[1],
+        b = 1 - na.omit(xb)[1]),
+    by = ID], id.vars = "ID")
+
+usewat <- list(ID = "ID", xw = xwid)
+
+knitr::kable(xwid[ID %in% c(1, 2, 4, 100)][order(ID)], digits = 2)
+```
+
+
+
+|  ID|variable | value|
+|---:|:--------|-----:|
+|   1|a        |  0.00|
+|   1|b        |  1.00|
+|   2|a        | -0.30|
+|   2|b        |  0.70|
+|   4|a        | -1.00|
+|   4|b        |  0.00|
+| 100|a        | -0.15|
+| 100|b        |  0.85|
+
+This new dataset shows what values to use for moving from
+one category of `x` to another category of `x` looks like, 
+for each ID. Note that sometimes these are the same. In the case 
+of ID 1, all `x` values were identical and thus all `xw` values
+will be 0. This is appropriate because for that ID, there was no 
+variation on `x` and so we have no idea what the "true" change 
+for ID 1 would be if moving from one category to another.
+
+Now we can use `brmsmargins()` to calculate the AME.
+We must still specify the `at` argument. Here we use
+our arbitrary lables of `a` and `b` for the variable,
+`xw`. We also pass our list to the argument `wat`.
+Internally, `brmsmargins()` will substitute `a` for
+all the values for `a` by ID from our list, and similarly for 
+`b`. The reason for this separation is in the `at` argument,
+one might have specific values of other variables as well,
+had there been other predictors in the model.
+
+The resulting summary gives the average marginal predictions 
+for `xw = a` and `xw = b` which in our case refers to when 
+`xw` is at 0 on `x` **for that ID** and when it is at 1 for `x`
+**for that ID**.
+
+
+```r
+ame.cent <- brmsmargins(
+  object = mlogitcent,
+  at = expand.grid(xw = c("a", "b")),
+  wat = usewat,
+  contrasts = cbind("AME xw" = c(-1, 1)),
+  effects = "integrateoutRE", k = 20L)
+
+knitr::kable(ame.cent$Summary, digits = 3)
+```
+
+
+
+|     M|   Mdn|    LL|    UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |
+|-----:|-----:|-----:|-----:|-----------:|----------:|----:|:------|:----|:---|
+| 0.122| 0.119| 0.051| 0.206|          NA|         NA| 0.99|HDI    |NA   |NA  |
+| 0.231| 0.228| 0.116| 0.345|          NA|         NA| 0.99|HDI    |NA   |NA  |
+
+Just as in other examples, we can get a summary of the
+contrast of these two values, our AME.
+
+
+```r
+knitr::kable(ame.cent$ContrastSummary, digits = 3)
+```
+
+
+
+|     M|   Mdn|    LL|    UL| PercentROPE| PercentMID|   CI|CIType |ROPE |MID |Label  |
+|-----:|-----:|-----:|-----:|-----------:|----------:|----:|:------|:----|:---|:------|
+| 0.109| 0.109| 0.041| 0.184|          NA|         NA| 0.99|HDI    |NA   |NA  |AME xw |
+
+## Interactions and Marginal Effects
+
+As a final example, we will look at a model with an interaction.
+Specifically we have a binary outcome, `y`, measured repeatedly.
+A binary predictor, `x` measured repeatedly within units and 
+group membership, `Group`, a binary variable that is constant within 
+units so only varies between units.
+
+To map these to a concrete potential research question, suppose that 
+100 people were randomized 1:1 to either a waitlist control group 
+(Group = 0) or an emotion regulation intervention designed to help 
+manage stress (Group = 1). After completing the intervention, 
+participants completed 20 days of daily diaries. Sleep was recorded 
+each day and categorized as a good night sleep 
+(`y` = 1) or a poor night sleep (`y` = 0).
+Each day participants' also reported whether they experienced 
+no stressor (`x` = 0) or any stressor (`x` = 1).
+
+The goal is to examine whether the intervention group moderates 
+participants' stress reactivity, defined as the association between 
+experiencing a stressor or not on a given day and whether they have 
+good or poor sleep that night. Based on clinical judgement and the 
+intervention cost, it is estimated that any probability difference 
+of plus or minus 2% is practically equivalent, so the 
+region of practical equivalence (ROPE) is set at -0.02 to +0.02.
+A probability difference of 5% or more is considered the minimally 
+important difference (MID), the smallest difference that is clinically 
+meaningful. Thus the MID is set at less than or equal to -0.05 or 
+greater than or equal to +0.05.
+
+To show this example, we first simulate a dataset, using a similar 
+process as in previous examples.
+
+
+```r
+d <- withr::with_seed(
+  seed = 12345, code = {
+    nGroups <- 100
+    nObs <- 20
+    theta.location <- matrix(rnorm(nGroups * 2), nrow = nGroups, ncol = 2)
+    theta.location[, 1] <- theta.location[, 1] - mean(theta.location[, 1])
+    theta.location[, 2] <- theta.location[, 2] - mean(theta.location[, 2])
+    theta.location[, 1] <- theta.location[, 1] / sd(theta.location[, 1])
+    theta.location[, 2] <- theta.location[, 2] / sd(theta.location[, 2])
+    theta.location <- theta.location %*% chol(matrix(c(1.5, -.25, -.25, .5^2), 2))
+    theta.location[, 1] <- theta.location[, 1] - 2.5
+    theta.location[, 2] <- theta.location[, 2] + rep(c(-1, 1), each = nGroups / 2)
+
+    d <- data.table(ID = seq_len(nGroups), group = rep(0:1, each = nGroups / 2))
+    d <- d[, .(x = rbinom(n = nObs, size = 1, prob = runif(1, 0, 1))), by = .(ID, group)]
+
+    for (i in seq_len(nGroups)) {
+      d[ID == i, y := rbinom(
+        n = nObs,
+        size = 1,
+        prob = plogis(theta.location[i, 1] + theta.location[i, 2] * x))
+        ]
+    }
+    copy(d)
+  })
+```
+
+Following the earlier example, we center our binary predictor, `x`
+(whether participants experienced any stressor that day).
+This separates the effects of experiencing a stressor within a person 
+from the fact that some people may experience stressors most days 
+or rarely experience any stressors. We call the between person variable,
+the average proportion of days experiencing a stressor, `xb`.
+We call the within person variable, `xw`. As in the example on 
+centering within person categorical variables, we also create a 
+dataset with the within person hypothetical values for each person,
+`usewat`.
+
+
+```r
+## within person centering binary predictor
+d[, xb := mean(x), by = ID]
+d[, xw := x - xb]
+
+xwid <- melt(
+  d[, .(a = 0 - na.omit(xb)[1],
+        b = 1 - na.omit(xb)[1]),
+    by = ID], id.vars = "ID")
+
+usewat <- list(ID = "ID", xw = xwid)
+```
+
+Group is measured between people so we do not need to center it.
+We include a random slope by `xw` (within person experience or not of a stressor)
+and an interaction between `xw` and `Group` to evaluate whether the 
+association between experiencing a stressor on a given day, at the within person level,
+is associated with a good or poor night sleep and whether that differs 
+between people randomized to the waitlist control or the intervention.
+The model can be fit as in the following code.
+
+
+```r
+mlogitcentint <- brms::brm(
+  y ~ 1 + xw * group + xb + (1 + xw | ID), family = "bernoulli",
+  data = d, seed = 1234,
+  silent = 2, refresh = 0,
+  chains = 4L, cores = 4L, backend = "cmdstanr")
+#> Compiling Stan program...
+```
+
+We will generate average marginal predicted probabilities 
+for each group and with within person stressor exposure held at
+none and any. The grid of possibilities is created and stored in 
+`use.at` and shown in the following table.
+
+
+```r
+use.at <- expand.grid(group = 0:1, xw = c("a", "b"))
+knitr::kable(use.at, digits = 0)
+```
+
+
+
+| group|xw |
+|-----:|:--|
+|     0|a  |
+|     1|a  |
+|     0|b  |
+|     1|b  |
+
+From this grid, there are three contrasts of interest.
+
+1. What is the average marginal effect (AME) of 
+within person stressor exposure on good or poor sleep 
+that night if everyone were randomized to the waitlist control group?
+2. What is the AME of within person stressor exposure on good or poor sleep
+that night if everyone were randomized to the intervention group?
+3. What is the difference in the AME of within person stressor exposure
+between the intervention and waitlist control group?
+
+A quick way to create this contrast matrix is to start 
+with our contrast codes for the AME: -1 and +1. 
+We use the kronecker product with a 2 x 2 identity matrix
+to expand this into the contrast codes needed for our 
+1st and 2nd questions. Then we take the difference in contrast
+weights between these two which are the weights for the 3rd question.
+The code to do this and the resulting contrast matrix with labels 
+is shown in the following code and table.
+
+
+```r
+contr.mat <- cbind(xw = c(-1, 1)) %x% diag(2)
+contr.mat <- cbind(
+  contr.mat,
+  contr.mat[, 2] - contr.mat[, 1])
+
+colnames(contr.mat) <- c(
+  paste0("AME xw: Grp ", 0:1),
+  "delta AME xw")
+
+knitr::kable(contr.mat, digits = 0)
+```
+
+
+
+| AME xw: Grp 0| AME xw: Grp 1| delta AME xw|
+|-------------:|-------------:|------------:|
+|            -1|             0|            1|
+|             0|            -1|           -1|
+|             1|             0|           -1|
+|             0|             1|            1|
+
+Now we can use `brmsmargins()` with the model, 
+our grid of values to generate average marginal predictions,
+and our contrast matrix to generate the AMEs and answer our 
+three questions. We specify here that we want 95% credible intervals,
+and we specify the desired ROPE and MID regions as well as the 
+seed so that we can reproduce the results exactly.
+Once run, we can see the average marginal predictions for our grid 
+of values in `use.at` in the following table.
+
+
+```r
+ame.centint <- brmsmargins(
+  object = mlogitcentint,
+  at = use.at,
+  wat = usewat,
+  contrasts = contr.mat, CI = 0.95,
+  ROPE = c(-.02, .02), MID = c(-.05, .05),
+  effects = "integrateoutRE", k = 20L, seed = 1234)
+
+knitr::kable(ame.centint$Summary[, .(M, LL, UL, CI, CIType)], digits = 3)
+```
+
+
+
+|     M|    LL|    UL|   CI|CIType |
+|-----:|-----:|-----:|----:|:------|
+| 0.117| 0.053| 0.187| 0.95|HDI    |
+| 0.145| 0.073| 0.221| 0.95|HDI    |
+| 0.045| 0.016| 0.081| 0.95|HDI    |
+| 0.268| 0.168| 0.379| 0.95|HDI    |
+
+Finally we can look at the contrast summary to answer our three 
+questions of interest: the two simple AMEs of within person stressor 
+exposure and the difference between intervention conditions in those AMEs.
+These are shown in the following table.
+
+From the results, we can see that if everyone were randomized 
+to the waitlist control group, we would expect a lower probability
+of a good night sleep on stressor compared to non stressor days,
+at the within person level. This effect is unlikely to be 
+practically equivalent to 0 (< 5% of the posterior falls in the ROPE) 
+but it also is not clearly exceeding the MID with < 90% of the posterior 
+distribution exceeding the MID.
+
+In comparison, if everyone were randomized to the intervention group,
+we would expect a better night sleep on stressor compared to non stressor 
+days at the within person level. This is unlikely to be an effect 
+practically equivalent to zero (< 5% of the posterior falls in the ROPE)
+and is likely to be at least a MID, as most of the posterior exceeds 
+the MID.
+
+Finally, we can see that the difference in the AMEs between 
+the control and intervention groups is quite large, with none of the 
+posterior distribution falling in the ROPE and nearly all of it exceeding 
+the MID.
+
+We can also see that our contrast coding did indeed yield the difference between 
+the two simple AMEs and can confirm with 'by hand' calculations that the 
+mean contrast estimate for the group difference is indeed the mean 
+for the AME for the intervention (Grp 1) minus the mean for the AME 
+for the waitlist control (Grp 0). Collectively, this suggests that 
+within people, days they are exposed to a stressor or not is associated 
+with their sleep that night, and that the emotion regulation intervention 
+moderates the association between within person stressor exposure and sleep.
+
+
+```r
+knitr::kable(ame.centint$ContrastSummary, digits = 3)
+```
+
+
+
+|      M|    Mdn|     LL|     UL| PercentROPE| PercentMID|   CI|CIType |ROPE          |MID                              |Label         |
+|------:|------:|------:|------:|-----------:|----------:|----:|:------|:-------------|:--------------------------------|:-------------|
+| -0.071| -0.068| -0.138| -0.016|       3.150|     74.625| 0.95|HDI    |[-0.02, 0.02] |[-Inf, -0.05] &#124; [0.05, Inf] |AME xw: Grp 0 |
+|  0.124|  0.122|  0.038|  0.214|       0.875|     95.625| 0.95|HDI    |[-0.02, 0.02] |[-Inf, -0.05] &#124; [0.05, Inf] |AME xw: Grp 1 |
+|  0.195|  0.191|  0.100|  0.302|       0.000|     99.900| 0.95|HDI    |[-0.02, 0.02] |[-Inf, -0.05] &#124; [0.05, Inf] |delta AME xw  |
+
+## References
+
+Potentially useful references.
+
+- Hedeker, D., du Toit, S. H., Demirtas, H., & Gibbons, R. D. (2018). A note on marginalization of regression parameters from mixed models of binary outcomes. *Biometrics, 74*(1), 354-361.
+- Hua, H., Burke, D. L., Crowther, M. J., Ensor, J., Tudur Smith, C., & Riley, R. D. (2017). One-stage individual participant data meta-analysis models: estimation of treatment-covariate interactions must avoid ecological bias by separating out within-trial and across-trial information. *Statistics in Medicine, 36*(5), 772–789. https://doi.org/10.1002/sim.7171
+- Mize, T. D., Doan, L., & Long, J. S. (2019). A general framework for comparing predictions and marginal effects across models. *Sociological Methodology, 49*(1), 152-189.
+- Norton, E. C., Dowd, B. E., & Maciejewski, M. L. (2019). Marginal effects—quantifying the effect of changes in risk factors in logistic regression models. *JAMA, 321*(13), 1304-1305.
+- Pavlou, M., Ambler, G., Seaman, S., & Omar, R. Z. (2015). A note on obtaining correct marginal predictions from a random intercepts model for binary outcomes. *BMC Medical Research Methodology, 15*(1), 1-6.
+- Yaremych, H. E., Preacher, K. J., & Hedeker, D. (2021). Centering categorical predictors in multilevel models: Best practices and interpretation. *Psychological Methods*. https://doi.org/10.1037/met0000434

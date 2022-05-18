@@ -1,8 +1,8 @@
 <!-- badges: start -->
-[![CRAN
-status](https://www.r-pkg.org/badges/version/brmsmargins)](https://cran.r-project.org/package=brmsmargins)
+[![CRAN-status](https://www.r-pkg.org/badges/version/brmsmargins)](https://cran.r-project.org/package=brmsmargins)
 [![R-CMD-check](https://github.com/JWiley/brmsmargins/workflows/R-CMD-check/badge.svg)](https://github.com/JWiley/brmsmargins/actions)
 [![codecov](https://codecov.io/gh/JWiley/brmsmargins/branch/main/graph/badge.svg?token=VXf0Qo0PRY)](https://app.codecov.io/gh/JWiley/brmsmargins)
+[![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
 ## Overview
@@ -45,7 +45,7 @@ Here is a quick syntax overview of how to use the main function,
 
 #### Fixed effects, continuous predictor.
 
-```
+```r
 h <- .001
 ames <- brmsmargins(
   object = model,
@@ -58,7 +58,7 @@ ames$ContrastSummary
 
 #### Fixed effects, discrete predictor.
 
-```
+```r
 ames <- brmsmargins(
   object = model,
   add = data.frame(x = c(0, 1)),
@@ -71,7 +71,7 @@ ames$ContrastSummary
 
 #### Mixed effects, continuous predictor.
 
-```
+```r
 h <- .001
 ames <- brmsmargins(
   object = model,
@@ -84,7 +84,7 @@ ames$ContrastSummary
 
 #### Mixed effects, discrete predictor.
 
-```
+```r
 ames <- brmsmargins(
   object = model,
   add = data.frame(x = c(0, 1)),
@@ -97,7 +97,7 @@ ames$ContrastSummary
 
 #### Mixed Effects Location Scale, continuous predictor
 
-```
+```r
 h <- .001
 ames <- brmsmargins(
   object = model,
@@ -111,7 +111,7 @@ ames$ContrastSummary
 
 #### Mixed Effects Location Scale, discrete predictor
 
-```
+```r
 ames <- brmsmargins(
   object = model,
   at = data.frame(x = c(0, 1)),
@@ -138,7 +138,7 @@ predicted values. For example, this would get predicted
 values integrating out random effects for a range of ages
 averaging (marginalizing) all other predictors / covariates.
 
-```
+```r
 ames <- brmsmargins(
   object = model,
   at = data.frame(age = c(20, 30, 40, 50, 60)),
@@ -149,10 +149,15 @@ ames$Summary
 
 ## Installation
 
-The package is not yet on CRAN, so to install, you must use the 
-development version. To install, run:
+You can install the package from CRAN by running this code:
 
+```r
+install.packages("brmsmargins")
 ```
+
+Alternately, for the latest, development version, run:
+
+```r
 remotes::install_github("JWiley/brmsmargins")
 ```
 

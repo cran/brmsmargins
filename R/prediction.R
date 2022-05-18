@@ -4,50 +4,75 @@
 #' Marginal predictions average over the input data for each posterior draw.
 #' Marginal predictions for models with random effects will integrate
 #' over random effects.
+#' Arguments are labeled as \emph{required} when it is required that the
+#' user directly specify the argument. Arguments are labeled as
+#' \emph{optional} when either the argument is optional or there are
+#' sensible default values so that users do not typically need to specify
+#' the argument.
 #'
-#' @param object A fitted brms model object. Required.
-#' @param data A data frame or data table passed to \code{fitted()}
-#'   as the new data to be used for predictions. Required.
-#' @param summarize A logical value, whether or not to
-#'   calculate summaries of the posterior predictions.
+#' @param object A \emph{required} argument specifying a fitted
+#'   \code{brms} model object.
+#' @param data A \emph{required} argument specifying a data frame or
+#'   data table passed to \code{fitted()} as the new data to be used
+#'   for predictions.
+#' @param summarize An \emph{optional} argument, a logical value, whether
+#'   or not to calculate summaries of the posterior predictions.
 #'   Defaults to \code{TRUE}.
-#' @param posterior A logical value whether or not to
-#'   save and return the posterior samples. Defaults
+#' @param posterior An \emph{optional} argument, a logical value whether
+#'   or not to save and return the posterior samples. Defaults
 #'   to \code{FALSE} as the assumption is a typical
 #'   use case is to return the summaries only.
-#' @param index An optional integer vector, giving the posterior draws
-#'   to be used in the calculations. If omitted, defaults to all
-#'   posterior draws.
-#' @param dpar Parameter passed on the \code{dpar}
-#'   argument of \code{fitted()} in brms. Defaults to \code{NULL}
+#' @param index An \emph{optional} argument, an integer vector, giving the
+#'   posterior draws to be used in the calculations. If omitted,
+#'   defaults to all posterior draws.
+#' @param dpar An \emph{optional} argument, the parameter passed on to the
+#'   \code{dpar} argument of \code{fitted()} in brms. Defaults to \code{NULL}
 #'   indicating the mean or location parameter typically.
-#' @param resample An integer indicating the number of
-#'   bootstrap resamples of the posterior predictions to
+#' @param resample An \emph{optional} argument, an integer indicating the
+#'   number of bootstrap resamples of the posterior predictions to
 #'   use when calculating summaries. Defaults to \code{0L}.
 #'   See documentation from [.averagePosterior()] for more details.
-#' @param resampleseed A seed for random number generation. Defaults to \code{FALSE},
-#'   which means no seed is set.
+#'   This should be considered experimental.
+#' @param resampleseed An \emph{optional} argument, a seed for random number
+#'   generation. Defaults to \code{FALSE}, which means no seed is set.
 #'   Only used if \code{resample} is a positive, non-zero integer.
 #'   See documentation from [.averagePosterior()] for more details.
-#' @param effects A character string indicating the type of
-#'   prediction to be made. Can be one of
+#'   This should be considered experimental.
+#' @param effects An \emph{optional} argument, a character string indicating
+#'   the type of prediction to be made. Can be one of
 #'   \dQuote{fixedonly} meaning only use fixed effects,
 #'   \dQuote{includeRE} meaning that random effects should be
 #'   included in the predictions, or
 #'   \dQuote{integrateoutRE} meaning that random effects should be
 #'    integrated out / over in the predictions.
-#' @param backtrans A character string indicating the type of
-#'   back transformation to be applied. Can be one of
+#'   It defaults to \dQuote{fixedonly} so is not typically required for
+#'   a user to specify it.
+#' @param backtrans An \emph{optional} argument, a character string indicating
+#'   the type of back transformation to be applied. Can be one of
 #'   \dQuote{response} meaning to use the response scale,
 #'   \dQuote{linear} or \dQuote{identity} meaning to use the linear predictor scale,
 #'   or a specific back transformation desired, from a possible list of
-#'   \dQuote{invlogit}, \dQuote{exp}, or \dQuote{square}.
+#'   \dQuote{invlogit}, \dQuote{exp}, \dQuote{square}, or \dQuote{inverse}.
 #'   Custom back transformations should only be needed if, for example,
 #'   the outcome variable was transformed prior to fitting the model.
-#' @param k An integer providing the number of random draws to use for
-#'   integrating out the random effects. Only relevant when \code{effects}
-#'   is \dQuote{integrateoutRE}.
-#' @param ... Additional arguments passed to \code{fitted()}
+#'   It defaults to \dQuote{response} so is not typically required for
+#'   a user to specify it.
+#' @param k An \emph{optional} argument, an integer providing the number of
+#'   random draws to use for integrating out the random effects.
+#'   Only relevant when \code{effects} is \dQuote{integrateoutRE}.
+#'   It defaults to \code{100L}, a rather arbitrary number attempting to
+#'   balance the increased precision that comes from a larger value,
+#'   with the increased computational cost of more Monte Carlo simulations
+#'   when integrating out random effects.
+#' @param raw An \emph{optional} argument, a logical value indicating whether to
+#'   return the raw output or to average over the Monte Carlo samples.
+#'   Defaults to \code{FALSE}.
+#'   Setting it to \code{TRUE} can be useful if you want not only the
+#'   full posterior distribution but also the \code{k} Monte Carlo samples
+#'   used for the numerical integration. This cannot be used with
+#'   \code{summarize = TRUE}.
+#' @param ... An \emph{optional} argument, additional arguments passed
+#'   to \code{fitted()}.
 #' @return A list with \code{Summary} and \code{Posterior}.
 #'   Some of these may be \code{NULL} depending on the arguments used.
 #' @references
@@ -61,15 +86,23 @@
 #' @importFrom data.table as.data.table
 #' @importFrom stats fitted formula
 #' @importFrom posterior as_draws_df ndraws
-#' @importFrom brms make_standata
-#' @importFrom methods missingArg
+#' @importFrom brms standata
 #' @export
 prediction <- function(object, data, summarize = TRUE, posterior = FALSE,
-                     index, dpar = NULL, resample = 0L, resampleseed = FALSE,
-                     effects = c("fixedonly", "includeRE", "integrateoutRE"),
-                     backtrans = c("response", "linear", "identity", "invlogit", "exp", "square"),
-                     k = 100L, ...) {
+                       index, dpar = NULL, resample = 0L, resampleseed = FALSE,
+                       effects = c("fixedonly", "includeRE", "integrateoutRE"),
+                       backtrans = c("response", "linear", "identity",
+                                     "invlogit", "exp", "square", "inverse"),
+                       k = 100L, raw = FALSE, ...) {
   ## checks and assertions
+  if (isTRUE(missing(object))) {
+    stop(paste(
+      "'object' is a required argument and cannot be missing;",
+      "  it should be a saved model fit from brms. For example:",
+      "  m <- brm(y ~ x, data = yourdata)",
+      "  See ?prediction or the website articles (vignettes) for details.",
+      "  https://joshuawiley.com/brmsmargins/", sep = "\n"))
+  }
   .assertbrmsfit(object)
   .assertdpar(object, dpar = dpar)
 
@@ -91,7 +124,7 @@ prediction <- function(object, data, summarize = TRUE, posterior = FALSE,
     .assertgaussian(object)
   }
 
-  if (isTRUE(missingArg(index))) {
+  if (isTRUE(missing(index))) {
     index <- seq_len(ndraws(object))
   }
 
@@ -108,19 +141,19 @@ prediction <- function(object, data, summarize = TRUE, posterior = FALSE,
   }
 
   ## generate all predictions (if fixedonly or includeRE)
-  ## or generate just the fixed effects predictions (if integrateRE)
+  ## or generate just the fixed effects predictions (if integrateoutRE)
   yhat <- fitted(
     object = object, newdata = data,
     re_formula = useRE,
     scale = links$scale, dpar = dpar,
     draw_ids = index, summary = FALSE)
-  yhat <- links$ifun(yhat)
+  yhat <- links$useifun(yhat)
 
   if (isTRUE(effects == "integrateoutRE")) {
     if (isTRUE(links$ilink != "identity")) {
       post <- as.data.table(as_draws_df(object))[index, ]
 
-      dtmp <- make_standata(formula(object), data = data)
+      dtmp <- standata(object, newdata = data, check_response = FALSE, allow_new_levels = TRUE)
 
       re <- as.data.table(object$ranef)
 
@@ -148,13 +181,24 @@ prediction <- function(object, data, summarize = TRUE, posterior = FALSE,
       }
 
       yhat <- integratere(d = d2, sd = sd, L = L, k = k,
-                               yhat = yhat, backtrans = links$ilinknum)
+                          yhat = yhat, backtrans = links$useilinknum)
     }
   }
 
-  ## average across rows
-  ## either using row wise means, or row wise bootstrapped means
-  yhat <- .averagePosterior(yhat, resample = resample, seed = resampleseed)
+  if (isTRUE(raw)) {
+    if (isTRUE(summarize)) {
+      message("summarize cannot be TRUE when raw = TRUE, setting to FALSE")
+      summarize <- FALSE
+    }
+    if (isFALSE(posterior)) {
+      message("posterior cannot be FALSE when raw = TRUE, setting to TRUE")
+      posterior <- TRUE
+    }
+  } else {
+    ## average across rows
+    ## either using row wise means, or row wise bootstrapped means
+    yhat <- .averagePosterior(yhat, resample = resample, seed = resampleseed)
+  }
 
   out <- list(
     Summary = NULL,

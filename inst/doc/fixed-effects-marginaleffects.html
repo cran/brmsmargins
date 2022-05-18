@@ -1328,6 +1328,7 @@ if (window.hljs) {
 
 
 
+
 <style type="text/css">
 .main-container {
   max-width: 940px;
@@ -1348,6 +1349,9 @@ button.code-folding-btn:focus {
 }
 summary {
   display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
 }
 pre code {
   padding: 0;
@@ -1510,7 +1514,8 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">Marginal Effects for Fixed Effects Models</h1>
+<h1 class="title toc-ignore">Marginal Effects for Fixed Effects
+Models</h1>
 
 </div>
 
@@ -1520,7 +1525,7 @@ library(data.table)
 #&gt; data.table 1.14.2 using 24 threads (see ?getDTthreads).  Latest news: r-datatable.com
 library(brms)
 #&gt; Loading required package: Rcpp
-#&gt; Loading &#39;brms&#39; package (version 2.16.3). Useful instructions
+#&gt; Loading &#39;brms&#39; package (version 2.17.0). Useful instructions
 #&gt; can be found by typing help(&#39;brms&#39;). A more detailed introduction
 #&gt; to the package is available through vignette(&#39;brms_overview&#39;).
 #&gt; 
@@ -1529,17 +1534,32 @@ library(brms)
 #&gt; 
 #&gt;     ar
 library(brmsmargins)</code></pre>
-<p>This vignette provides a brief overview of how to calculate marginal effects for Bayesian regression models involving only fixed effects and fit using the <code>brms</code> package.</p>
+<p>This vignette provides a brief overview of how to calculate marginal
+effects for Bayesian regression models involving only fixed effects and
+fit using the <code>brms</code> package.</p>
 <div id="what-are-marginal-effects" class="section level2">
 <h2>What are marginal effects?</h2>
-<p>Marginal effects can be used to describe how an outcome is predicted to change with a change in a predictor (or predictors). It is a derivative. For convenience, typically calculated numerically rather than analytically.</p>
-<p>To motivate marginal effects, we can look at some regression models fit in a frequentist framework for simplicity and speed. Here we use the <code>mtcars</code> dataset built into <code>R</code>. First, we can look at a linear regression model of the association between <code>mpg</code> and <code>hp</code>. Here we can see the estimated regression coefficient for <code>mpg</code>.</p>
+<p>Marginal effects can be used to describe how an outcome is predicted
+to change with a change in a predictor (or predictors). It is a
+derivative. For convenience, typically calculated numerically rather
+than analytically.</p>
+<p>To motivate marginal effects, we can look at some regression models
+fit in a frequentist framework for simplicity and speed. Here we use the
+<code>mtcars</code> dataset built into <code>R</code>. First, we can
+look at a linear regression model of the association between
+<code>mpg</code> and <code>hp</code>. Here we can see the estimated
+regression coefficient for <code>mpg</code>.</p>
 <pre class="r"><code>m.linear &lt;- lm(hp ~ am + mpg, data = mtcars)
 
 coef(m.linear)[&quot;mpg&quot;]
 #&gt;       mpg 
 #&gt; -11.19988</code></pre>
-<p>In linear models with no interactions, no (non linear) transformations, and a linear link function, the regression coefficient is the predicted change in the outcome for a one unit change in the predictor, regardless of any other values. For example, here we can look at the predicted difference in the outcome for a one unit difference in <code>mpg</code> from 0 to 1, holding <code>am = 0</code>.</p>
+<p>In linear models with no interactions, no (non linear)
+transformations, and a linear link function, the regression coefficient
+is the predicted change in the outcome for a one unit change in the
+predictor, regardless of any other values. For example, here we can look
+at the predicted difference in the outcome for a one unit difference in
+<code>mpg</code> from 0 to 1, holding <code>am = 0</code>.</p>
 <pre class="r"><code>yhat &lt;- predict(
   m.linear,
   newdata = data.frame(am = 0, mpg = c(0, 1)),
@@ -1548,7 +1568,8 @@ coef(m.linear)[&quot;mpg&quot;]
 diff(yhat)
 #&gt;         2 
 #&gt; -11.19988</code></pre>
-<p>We can look at the same estimate but moving <code>mpg</code> from 10 to 11 instead 0 to 1, holding <code>am = 1</code>.</p>
+<p>We can look at the same estimate but moving <code>mpg</code> from 10
+to 11 instead 0 to 1, holding <code>am = 1</code>.</p>
 <pre class="r"><code>yhat &lt;- predict(
   m.linear,
   newdata = data.frame(am = 1, mpg = c(10, 11)),
@@ -1557,14 +1578,23 @@ diff(yhat)
 diff(yhat)
 #&gt;         2 
 #&gt; -11.19988</code></pre>
-<p>All of these quantities are identical. In this case, the regression coefficient can be interpreted as a marginal effect: the expected change in the outcome for a one unit shift in <code>mpg</code>, regardless of the value of <code>am</code> and regardless of the values where <code>mpg</code> is evaluated.</p>
-<p>This convenient property does not hold for many types of models. Next consider a logistic regression model. The regression coefficient, shown below, is on the log odds scale, not the probability scale. This is not convenient for interpretation, as the log odds scale is not the same scale as our outcome.</p>
+<p>All of these quantities are identical. In this case, the regression
+coefficient can be interpreted as a marginal effect: the expected change
+in the outcome for a one unit shift in <code>mpg</code>, regardless of
+the value of <code>am</code> and regardless of the values where
+<code>mpg</code> is evaluated.</p>
+<p>This convenient property does not hold for many types of models. Next
+consider a logistic regression model. The regression coefficient, shown
+below, is on the log odds scale, not the probability scale. This is not
+convenient for interpretation, as the log odds scale is not the same
+scale as our outcome.</p>
 <pre class="r"><code>m.logistic &lt;- glm(vs ~ am + mpg, data = mtcars, family = binomial())
 
 coef(m.logistic)[&quot;mpg&quot;]
 #&gt;       mpg 
 #&gt; 0.6809205</code></pre>
-<p>We can find predicted differences on the probability scale. Here moving <code>mpg</code> from 10 to 11 holding <code>am = 0</code>.</p>
+<p>We can find predicted differences on the probability scale. Here
+moving <code>mpg</code> from 10 to 11 holding <code>am = 0</code>.</p>
 <pre class="r"><code>yhat &lt;- predict(
   m.logistic,
   newdata = data.frame(am = 0, mpg = c(10, 11)),
@@ -1573,7 +1603,8 @@ coef(m.logistic)[&quot;mpg&quot;]
 diff(yhat)
 #&gt;           2 
 #&gt; 0.002661989</code></pre>
-<p>We can look at the same estimate but moving <code>mpg</code> from 20 to 21 instead 10 to 11 again holding <code>am = 0</code>.</p>
+<p>We can look at the same estimate but moving <code>mpg</code> from 20
+to 21 instead 10 to 11 again holding <code>am = 0</code>.</p>
 <pre class="r"><code>yhat &lt;- predict(
   m.logistic,
   newdata = data.frame(am = 0, mpg = c(20, 21)),
@@ -1582,7 +1613,8 @@ diff(yhat)
 diff(yhat)
 #&gt;         2 
 #&gt; 0.1175344</code></pre>
-<p>We can look at the same estimate moving <code>mpg</code> from 20 to 21 as before, but this time holding <code>am = 1</code>.</p>
+<p>We can look at the same estimate moving <code>mpg</code> from 20 to
+21 as before, but this time holding <code>am = 1</code>.</p>
 <pre class="r"><code>yhat &lt;- predict(
   m.logistic,
   newdata = data.frame(am = 1, mpg = c(20, 21)),
@@ -1591,11 +1623,25 @@ diff(yhat)
 diff(yhat)
 #&gt;          2 
 #&gt; 0.08606869</code></pre>
-<p>All the estimates in this case differ. The association between <code>mpg</code> and <strong>probability</strong> of <code>vs</code> is not linear. Marginal effects provide a way to get results on the response scale, which can aid interpretation.</p>
-<p>A common type of marginal effect is an average marginal effect (AME). To calculate an AME numerically, we can get predicted probabilities from a model for every observation in the dataset. For continuous variables, we might use a very small difference to approximate the derivative. For categorical variables, we might calculate a discrete difference.</p>
+<p>All the estimates in this case differ. The association between
+<code>mpg</code> and <strong>probability</strong> of <code>vs</code> is
+not linear. Marginal effects provide a way to get results on the
+response scale, which can aid interpretation.</p>
+<p>A common type of marginal effect is an average marginal effect (AME).
+To calculate an AME numerically, we can get predicted probabilities from
+a model for every observation in the dataset. For continuous variables,
+we might use a very small difference to approximate the derivative. For
+categorical variables, we might calculate a discrete difference.</p>
 <div id="average-marginal-effect-ame" class="section level3">
 <h3>Average Marginal Effect (AME)</h3>
-<p>Here is an example of a continuous AME. <code>h</code> is a value near to zero used for the numerical derivative. We take all the values observed in the dataset for the first set of predicted probabilities. Then we take the observed values + <code>h</code> and calculate new predicted probabilities. The difference, divided by <code>h</code> is the “instantaneous” (i.e., derivative) on the probability scale for a one unit shift in the predictor, <code>mpg</code>, for each person. When we average all of these, we get the AME.</p>
+<p>Here is an example of a continuous AME. <code>h</code> is a value
+near to zero used for the numerical derivative. We take all the values
+observed in the dataset for the first set of predicted probabilities.
+Then we take the observed values + <code>h</code> and calculate new
+predicted probabilities. The difference, divided by <code>h</code> is
+the “instantaneous” (i.e., derivative) on the probability scale for a
+one unit shift in the predictor, <code>mpg</code>, for each person. When
+we average all of these, we get the AME.</p>
 <pre class="r"><code>h &lt;- .001
 
 nd.1 &lt;- nd.0 &lt;- model.frame(m.logistic)
@@ -1613,7 +1659,10 @@ yhat.1 &lt;- predict(
 
 mean((yhat.1 - yhat.0) / h)
 #&gt; [1] 0.06922997</code></pre>
-<p>Here is an example of a discrete AME. The variable, <code>am</code> only takes two values: 0 or 1. So we calculate predicted probabilities if everyone had <code>am = 0</code> and then again if everyone had <code>am = 1</code>.</p>
+<p>Here is an example of a discrete AME. The variable, <code>am</code>
+only takes two values: 0 or 1. So we calculate predicted probabilities
+if everyone had <code>am = 0</code> and then again if everyone had
+<code>am = 1</code>.</p>
 <pre class="r"><code>nd.1 &lt;- nd.0 &lt;- model.frame(m.logistic)
 nd.0$am &lt;- 0
 nd.1$am &lt;- 1
@@ -1630,12 +1679,19 @@ yhat.1 &lt;- predict(
 
 mean((yhat.1 - yhat.0))
 #&gt; [1] -0.2618203</code></pre>
-<p>In both these examples, we are averaging across the different values observed in the dataset. In a frequentist framework, additional details are needed to calculate uncertainty intervals. In a Bayesian framework, uncertainty intervals can be calculated readily by summarizing the posterior.</p>
+<p>In both these examples, we are averaging across the different values
+observed in the dataset. In a frequentist framework, additional details
+are needed to calculate uncertainty intervals. In a Bayesian framework,
+uncertainty intervals can be calculated readily by summarizing the
+posterior.</p>
 </div>
 </div>
 <div id="ames-for-logistic-regression" class="section level2">
 <h2>AMEs for Logistic Regression</h2>
-<p>The main function for users to use is <code>brmsmargins()</code>. Here is an example calculating AMEs for <code>mpg</code> and <code>am</code>. First we will fit the same logistic regression model using <code>brms</code>.</p>
+<p>The main function for users to use is <code>brmsmargins()</code>.
+Here is an example calculating AMEs for <code>mpg</code> and
+<code>am</code>. First we will fit the same logistic regression model
+using <code>brms</code>.</p>
 <pre class="r"><code>bayes.logistic &lt;- brm(
   vs ~ am + mpg, data = mtcars,
   family = &quot;bernoulli&quot;, seed = 1234,
@@ -1647,19 +1703,28 @@ mean((yhat.1 - yhat.0))
 #&gt;   Links: mu = logit 
 #&gt; Formula: vs ~ am + mpg 
 #&gt;    Data: mtcars (Number of observations: 32) 
-#&gt;   Draws: 4 chains, each with iter = 1000; warmup = 0; thin = 1;
+#&gt;   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 #&gt;          total post-warmup draws = 4000
 #&gt; 
 #&gt; Population-Level Effects: 
 #&gt;           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#&gt; Intercept   -16.13      5.56   -28.70    -7.35 1.00     1826     1853
-#&gt; am           -3.80      1.84    -7.83    -0.70 1.00     1663     1449
-#&gt; mpg           0.87      0.30     0.39     1.55 1.00     1702     1854
+#&gt; Intercept   -16.03      5.49   -28.79    -7.15 1.00     1797     1897
+#&gt; am           -3.77      1.82    -7.87    -0.71 1.00     1689     1766
+#&gt; mpg           0.86      0.30     0.38     1.57 1.00     1707     1842
 #&gt; 
 #&gt; Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
 #&gt; and Tail_ESS are effective sample size measures, and Rhat is the potential
 #&gt; scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>Now we can use <code>brmsmargins()</code>. We give it the model object, a <code>data.frame</code> of the values to be added, first 0, then (0 + h), and a contrast matrix. The default is a 99 percent credible interval, which we override here to 0.95. We use highest density intervals, which are the default. We also could have selected “ETI” for equal tail intervals. <code>brmsmargins()</code> will return a list with the posterior of each prediction, a summary of the posterior for the predictions, the posterior for the contrasts, and a summary of the posterior for the contrasts. Here we just have the one contrast, but multiple could have been specified.</p>
+<p>Now we can use <code>brmsmargins()</code>. We give it the model
+object, a <code>data.frame</code> of the values to be added, first 0,
+then (0 + h), and a contrast matrix. The default is a 99 percent
+credible interval, which we override here to 0.95. We use highest
+density intervals, which are the default. We also could have selected
+“ETI” for equal tail intervals. <code>brmsmargins()</code> will return a
+list with the posterior of each prediction, a summary of the posterior
+for the predictions, the posterior for the contrasts, and a summary of
+the posterior for the contrasts. Here we just have the one contrast, but
+multiple could have been specified.</p>
 <pre class="r"><code>h &lt;- .001
 ame1 &lt;- brmsmargins(
   bayes.logistic,
@@ -1669,6 +1734,19 @@ ame1 &lt;- brmsmargins(
 
 kable(ame1$ContrastSummary, digits = 3)</code></pre>
 <table>
+<colgroup>
+<col width="8%" />
+<col width="6%" />
+<col width="8%" />
+<col width="8%" />
+<col width="16%" />
+<col width="14%" />
+<col width="6%" />
+<col width="9%" />
+<col width="6%" />
+<col width="5%" />
+<col width="10%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1688,7 +1766,7 @@ kable(ame1$ContrastSummary, digits = 3)</code></pre>
 <tr class="odd">
 <td align="right">0.071</td>
 <td align="right">0.07</td>
-<td align="right">0.053</td>
+<td align="right">0.054</td>
 <td align="right">0.091</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
@@ -1700,7 +1778,13 @@ kable(ame1$ContrastSummary, digits = 3)</code></pre>
 </tr>
 </tbody>
 </table>
-<p>Now we can look at how we could calculate a discrete AME. This time we use the <code>at</code> argument instead of the <code>add</code> argument as we want to hold <code>am</code> at specific values, not add 0 and 1 to the observed <code>am</code> values. Because 0 and 1 are meaningful values of <code>am</code>, we also look at the summary of the posterior for the predictions. These predictions average across all values of <code>mpg</code>.</p>
+<p>Now we can look at how we could calculate a discrete AME. This time
+we use the <code>at</code> argument instead of the <code>add</code>
+argument as we want to hold <code>am</code> at specific values, not add
+0 and 1 to the observed <code>am</code> values. Because 0 and 1 are
+meaningful values of <code>am</code>, we also look at the summary of the
+posterior for the predictions. These predictions average across all
+values of <code>mpg</code>.</p>
 <pre class="r"><code>ame2 &lt;- brmsmargins(
   bayes.logistic,
   at = data.frame(am = c(0, 1)),
@@ -1708,7 +1792,19 @@ kable(ame1$ContrastSummary, digits = 3)</code></pre>
   CI = 0.95, CIType = &quot;HDI&quot;)
 
 kable(ame2$Summary, digits = 3)</code></pre>
-<table>
+<table style="width:100%;">
+<colgroup>
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="17%" />
+<col width="16%" />
+<col width="7%" />
+<col width="10%" />
+<col width="7%" />
+<col width="5%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1726,9 +1822,9 @@ kable(ame2$Summary, digits = 3)</code></pre>
 <tbody>
 <tr class="odd">
 <td align="right">0.543</td>
-<td align="right">0.545</td>
-<td align="right">0.421</td>
-<td align="right">0.652</td>
+<td align="right">0.544</td>
+<td align="right">0.419</td>
+<td align="right">0.653</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.95</td>
@@ -1739,8 +1835,8 @@ kable(ame2$Summary, digits = 3)</code></pre>
 <tr class="even">
 <td align="right">0.284</td>
 <td align="right">0.277</td>
-<td align="right">0.177</td>
-<td align="right">0.406</td>
+<td align="right">0.180</td>
+<td align="right">0.409</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.95</td>
@@ -1752,6 +1848,19 @@ kable(ame2$Summary, digits = 3)</code></pre>
 </table>
 <pre class="r"><code>kable(ame2$ContrastSummary)</code></pre>
 <table>
+<colgroup>
+<col width="10%" />
+<col width="11%" />
+<col width="11%" />
+<col width="11%" />
+<col width="12%" />
+<col width="11%" />
+<col width="5%" />
+<col width="7%" />
+<col width="5%" />
+<col width="4%" />
+<col width="7%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1769,10 +1878,10 @@ kable(ame2$Summary, digits = 3)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">-0.2597831</td>
-<td align="right">-0.2654204</td>
-<td align="right">-0.428464</td>
-<td align="right">-0.0882898</td>
+<td align="right">-0.258856</td>
+<td align="right">-0.2648354</td>
+<td align="right">-0.4252779</td>
+<td align="right">-0.0862889</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.95</td>
@@ -1783,13 +1892,18 @@ kable(ame2$Summary, digits = 3)</code></pre>
 </tr>
 </tbody>
 </table>
-<p>Note that by default, <code>brmsmargins()</code> uses the model frame from the model object as the dataset. This, however, can be overridden. You can give it any (valid) dataset and it will add or override the chosen values and average across the predictions from the different rows of the dataset.</p>
+<p>Note that by default, <code>brmsmargins()</code> uses the model frame
+from the model object as the dataset. This, however, can be overridden.
+You can give it any (valid) dataset and it will add or override the
+chosen values and average across the predictions from the different rows
+of the dataset.</p>
 </div>
 <div id="ames-for-poisson-regression" class="section level2">
 <h2>AMEs for Poisson Regression</h2>
-<p>Here is a short example for Poisson regression used for count outcomes. We use a dataset drawn from: <a href="https://stats.idre.ucla.edu/r/dae/poisson-regression/" class="uri">https://stats.idre.ucla.edu/r/dae/poisson-regression/</a></p>
+<p>Here is a short example for Poisson regression used for count
+outcomes. We use a dataset drawn from: <a href="https://stats.oarc.ucla.edu/r/dae/poisson-regression/" class="uri">https://stats.oarc.ucla.edu/r/dae/poisson-regression/</a></p>
 <pre class="r"><code>
-d &lt;- fread(&quot;https://stats.idre.ucla.edu/stat/data/poisson_sim.csv&quot;)
+d &lt;- fread(&quot;https://stats.oarc.ucla.edu/stat/data/poisson_sim.csv&quot;)
 d[, prog := factor(prog, levels = 1:3, labels = c(&quot;General&quot;, &quot;Academic&quot;, &quot;Vocational&quot;))]
 
 bayes.poisson &lt;- brm(
@@ -1803,20 +1917,21 @@ bayes.poisson &lt;- brm(
 #&gt;   Links: mu = log 
 #&gt; Formula: num_awards ~ prog + math 
 #&gt;    Data: d (Number of observations: 200) 
-#&gt;   Draws: 4 chains, each with iter = 1000; warmup = 0; thin = 1;
+#&gt;   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 #&gt;          total post-warmup draws = 4000
 #&gt; 
 #&gt; Population-Level Effects: 
 #&gt;                Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#&gt; Intercept         -5.33      0.67    -6.70    -4.06 1.00     2202     1923
-#&gt; progAcademic       1.14      0.37     0.45     1.91 1.00     1957     2210
-#&gt; progVocational     0.38      0.45    -0.49     1.30 1.00     2114     1882
-#&gt; math               0.07      0.01     0.05     0.09 1.00     2238     2373
+#&gt; Intercept         -5.31      0.66    -6.66    -4.03 1.00     1933     2312
+#&gt; progAcademic       1.15      0.38     0.46     1.97 1.00     2088     1947
+#&gt; progVocational     0.39      0.47    -0.48     1.36 1.00     2174     2024
+#&gt; math               0.07      0.01     0.05     0.09 1.00     2592     2120
 #&gt; 
 #&gt; Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
 #&gt; and Tail_ESS are effective sample size measures, and Rhat is the potential
 #&gt; scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>AME for a continuous variable, using default CI interval and type.</p>
+<p>AME for a continuous variable, using default CI interval and
+type.</p>
 <pre class="r"><code>h &lt;- .001
 ame1.p &lt;- brmsmargins(
   bayes.poisson,
@@ -1825,6 +1940,19 @@ ame1.p &lt;- brmsmargins(
 
 kable(ame1.p$ContrastSummary, digits = 3)</code></pre>
 <table>
+<colgroup>
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="15%" />
+<col width="14%" />
+<col width="6%" />
+<col width="9%" />
+<col width="6%" />
+<col width="5%" />
+<col width="11%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1844,8 +1972,8 @@ kable(ame1.p$ContrastSummary, digits = 3)</code></pre>
 <tr class="odd">
 <td align="right">0.044</td>
 <td align="right">0.044</td>
-<td align="right">0.025</td>
-<td align="right">0.064</td>
+<td align="right">0.026</td>
+<td align="right">0.065</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -1856,7 +1984,9 @@ kable(ame1.p$ContrastSummary, digits = 3)</code></pre>
 </tr>
 </tbody>
 </table>
-<p>AME for a categorical variable. Here we calculate pairwise contrasts for all three program types. These are the predicted number of awards.</p>
+<p>AME for a categorical variable. Here we calculate pairwise contrasts
+for all three program types. These are the predicted number of
+awards.</p>
 <pre class="r"><code>ame2.p &lt;- brmsmargins(
   bayes.poisson,
   at = data.frame(
@@ -1868,7 +1998,19 @@ kable(ame1.p$ContrastSummary, digits = 3)</code></pre>
     &quot;AME Academic v Vocational&quot; = c(0, 1, -1)))
     
 kable(ame2.p$Summary, digits = 3)</code></pre>
-<table>
+<table style="width:100%;">
+<colgroup>
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="17%" />
+<col width="16%" />
+<col width="7%" />
+<col width="10%" />
+<col width="7%" />
+<col width="5%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1886,9 +2028,9 @@ kable(ame2.p$Summary, digits = 3)</code></pre>
 <tbody>
 <tr class="odd">
 <td align="right">0.263</td>
-<td align="right">0.250</td>
-<td align="right">0.080</td>
-<td align="right">0.538</td>
+<td align="right">0.253</td>
+<td align="right">0.076</td>
+<td align="right">0.526</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -1897,10 +2039,10 @@ kable(ame2.p$Summary, digits = 3)</code></pre>
 <td align="left">NA</td>
 </tr>
 <tr class="even">
+<td align="right">0.781</td>
 <td align="right">0.779</td>
-<td align="right">0.776</td>
-<td align="right">0.583</td>
-<td align="right">0.996</td>
+<td align="right">0.600</td>
+<td align="right">0.988</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -1909,10 +2051,10 @@ kable(ame2.p$Summary, digits = 3)</code></pre>
 <td align="left">NA</td>
 </tr>
 <tr class="odd">
-<td align="right">0.377</td>
+<td align="right">0.380</td>
 <td align="right">0.368</td>
-<td align="right">0.133</td>
-<td align="right">0.681</td>
+<td align="right">0.126</td>
+<td align="right">0.710</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -1924,6 +2066,19 @@ kable(ame2.p$Summary, digits = 3)</code></pre>
 </table>
 <pre class="r"><code>kable(ame2.p$ContrastSummary, digits = 3)</code></pre>
 <table>
+<colgroup>
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="12%" />
+<col width="11%" />
+<col width="5%" />
+<col width="7%" />
+<col width="5%" />
+<col width="4%" />
+<col width="26%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1941,10 +2096,10 @@ kable(ame2.p$Summary, digits = 3)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">-0.516</td>
-<td align="right">-0.525</td>
-<td align="right">-0.815</td>
-<td align="right">-0.175</td>
+<td align="right">-0.518</td>
+<td align="right">-0.524</td>
+<td align="right">-0.820</td>
+<td align="right">-0.176</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -1954,10 +2109,10 @@ kable(ame2.p$Summary, digits = 3)</code></pre>
 <td align="left">AME General v Academic</td>
 </tr>
 <tr class="even">
-<td align="right">-0.114</td>
+<td align="right">-0.117</td>
 <td align="right">-0.111</td>
-<td align="right">-0.473</td>
-<td align="right">0.244</td>
+<td align="right">-0.503</td>
+<td align="right">0.280</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -1967,9 +2122,9 @@ kable(ame2.p$Summary, digits = 3)</code></pre>
 <td align="left">AME General v Vocational</td>
 </tr>
 <tr class="odd">
-<td align="right">0.402</td>
-<td align="right">0.409</td>
-<td align="right">0.006</td>
+<td align="right">0.400</td>
+<td align="right">0.406</td>
+<td align="right">0.019</td>
 <td align="right">0.726</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
@@ -1984,8 +2139,10 @@ kable(ame2.p$Summary, digits = 3)</code></pre>
 </div>
 <div id="ames-for-negative-binomial-regression" class="section level2">
 <h2>AMEs for Negative Binomial Regression</h2>
-<p>Here is a short example for Negative Binomial regression used for count outcomes. We use the same setup as for the Poisson regression example.</p>
-<pre class="r"><code>d &lt;- read.csv(&quot;https://stats.idre.ucla.edu/stat/data/poisson_sim.csv&quot;)
+<p>Here is a short example for Negative Binomial regression used for
+count outcomes. We use the same setup as for the Poisson regression
+example.</p>
+<pre class="r"><code>d &lt;- read.csv(&quot;https://stats.oarc.ucla.edu/stat/data/poisson_sim.csv&quot;)
 d$prog &lt;- factor(d$prog, levels = 1:3, labels = c(&quot;General&quot;, &quot;Academic&quot;, &quot;Vocational&quot;))
 
 bayes.nb &lt;- brm(
@@ -1999,24 +2156,25 @@ bayes.nb &lt;- brm(
 #&gt;   Links: mu = log; shape = identity 
 #&gt; Formula: num_awards ~ prog + math 
 #&gt;    Data: d (Number of observations: 200) 
-#&gt;   Draws: 4 chains, each with iter = 1000; warmup = 0; thin = 1;
+#&gt;   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 #&gt;          total post-warmup draws = 4000
 #&gt; 
 #&gt; Population-Level Effects: 
 #&gt;                Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#&gt; Intercept         -5.38      0.71    -6.79    -3.98 1.00     2747     2510
-#&gt; progAcademic       1.13      0.37     0.43     1.87 1.00     2565     2476
-#&gt; progVocational     0.38      0.47    -0.54     1.27 1.00     2547     2094
-#&gt; math               0.07      0.01     0.05     0.09 1.00     2846     2549
+#&gt; Intercept         -5.39      0.70    -6.82    -4.06 1.00     2813     2387
+#&gt; progAcademic       1.14      0.38     0.42     1.89 1.00     2187     2343
+#&gt; progVocational     0.40      0.47    -0.49     1.32 1.00     2155     2093
+#&gt; math               0.07      0.01     0.05     0.09 1.00     3139     2500
 #&gt; 
 #&gt; Family Specific Parameters: 
 #&gt;       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#&gt; shape    20.34     37.45     1.95   115.92 1.00     2723     2398
+#&gt; shape    19.82     35.82     1.91   112.92 1.00     2453     2214
 #&gt; 
 #&gt; Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
 #&gt; and Tail_ESS are effective sample size measures, and Rhat is the potential
 #&gt; scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>AME for a continuous variable, using default CI interval and type.</p>
+<p>AME for a continuous variable, using default CI interval and
+type.</p>
 <pre class="r"><code>h &lt;- .001
 ame1.nb &lt;- brmsmargins(
   bayes.nb,
@@ -2025,6 +2183,19 @@ ame1.nb &lt;- brmsmargins(
 
 kable(ame1.nb$ContrastSummary, digits = 3)</code></pre>
 <table>
+<colgroup>
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="6%" />
+<col width="15%" />
+<col width="14%" />
+<col width="6%" />
+<col width="9%" />
+<col width="6%" />
+<col width="5%" />
+<col width="11%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -2045,7 +2216,7 @@ kable(ame1.nb$ContrastSummary, digits = 3)</code></pre>
 <td align="right">0.045</td>
 <td align="right">0.045</td>
 <td align="right">0.022</td>
-<td align="right">0.069</td>
+<td align="right">0.07</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -2056,7 +2227,9 @@ kable(ame1.nb$ContrastSummary, digits = 3)</code></pre>
 </tr>
 </tbody>
 </table>
-<p>AME for a categorical variable. Here we calculate pairwise contrasts for all three program types. These are the predicted number of awards.</p>
+<p>AME for a categorical variable. Here we calculate pairwise contrasts
+for all three program types. These are the predicted number of
+awards.</p>
 <pre class="r"><code>ame2.nb &lt;- brmsmargins(
   bayes.nb,
   at = data.frame(
@@ -2068,7 +2241,19 @@ kable(ame1.nb$ContrastSummary, digits = 3)</code></pre>
     &quot;AME Academic v Vocational&quot; = c(0, 1, -1)))
     
 kable(ame2.nb$Summary, digits = 3)</code></pre>
-<table>
+<table style="width:100%;">
+<colgroup>
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="17%" />
+<col width="16%" />
+<col width="7%" />
+<col width="10%" />
+<col width="7%" />
+<col width="5%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -2085,10 +2270,10 @@ kable(ame2.nb$Summary, digits = 3)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">0.267</td>
-<td align="right">0.255</td>
-<td align="right">0.079</td>
-<td align="right">0.561</td>
+<td align="right">0.264</td>
+<td align="right">0.251</td>
+<td align="right">0.072</td>
+<td align="right">0.562</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -2097,10 +2282,10 @@ kable(ame2.nb$Summary, digits = 3)</code></pre>
 <td align="left">NA</td>
 </tr>
 <tr class="even">
-<td align="right">0.779</td>
-<td align="right">0.775</td>
-<td align="right">0.579</td>
-<td align="right">1.014</td>
+<td align="right">0.781</td>
+<td align="right">0.778</td>
+<td align="right">0.565</td>
+<td align="right">1.010</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -2109,10 +2294,10 @@ kable(ame2.nb$Summary, digits = 3)</code></pre>
 <td align="left">NA</td>
 </tr>
 <tr class="odd">
-<td align="right">0.387</td>
-<td align="right">0.375</td>
-<td align="right">0.142</td>
-<td align="right">0.728</td>
+<td align="right">0.388</td>
+<td align="right">0.374</td>
+<td align="right">0.146</td>
+<td align="right">0.756</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -2124,6 +2309,19 @@ kable(ame2.nb$Summary, digits = 3)</code></pre>
 </table>
 <pre class="r"><code>kable(ame2.nb$ContrastSummary, digits = 3)</code></pre>
 <table>
+<colgroup>
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="12%" />
+<col width="11%" />
+<col width="5%" />
+<col width="7%" />
+<col width="5%" />
+<col width="4%" />
+<col width="26%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -2141,10 +2339,10 @@ kable(ame2.nb$Summary, digits = 3)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">-0.512</td>
 <td align="right">-0.517</td>
-<td align="right">-0.847</td>
-<td align="right">-0.161</td>
+<td align="right">-0.523</td>
+<td align="right">-0.840</td>
+<td align="right">-0.127</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -2154,10 +2352,10 @@ kable(ame2.nb$Summary, digits = 3)</code></pre>
 <td align="left">AME General v Academic</td>
 </tr>
 <tr class="even">
+<td align="right">-0.124</td>
 <td align="right">-0.120</td>
-<td align="right">-0.117</td>
-<td align="right">-0.524</td>
-<td align="right">0.288</td>
+<td align="right">-0.532</td>
+<td align="right">0.270</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -2167,10 +2365,10 @@ kable(ame2.nb$Summary, digits = 3)</code></pre>
 <td align="left">AME General v Vocational</td>
 </tr>
 <tr class="odd">
-<td align="right">0.391</td>
-<td align="right">0.397</td>
-<td align="right">-0.022</td>
-<td align="right">0.748</td>
+<td align="right">0.392</td>
+<td align="right">0.405</td>
+<td align="right">-0.024</td>
+<td align="right">0.768</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -2186,8 +2384,12 @@ kable(ame2.nb$Summary, digits = 3)</code></pre>
 <h2>References</h2>
 <p>These references may be useful.</p>
 <ul>
-<li>Norton, E. C., Dowd, B. E., &amp; Maciejewski, M. L. (2019). Marginal effects—quantifying the effect of changes in risk factors in logistic regression models. <em>JAMA, 321</em>(13), 1304-1305.</li>
-<li>Mize, T. D., Doan, L., &amp; Long, J. S. (2019). A general framework for comparing predictions and marginal effects across models. <em>Sociological Methodology, 49</em>(1), 152-189.</li>
+<li>Norton, E. C., Dowd, B. E., &amp; Maciejewski, M. L. (2019).
+Marginal effects—quantifying the effect of changes in risk factors in
+logistic regression models. <em>JAMA, 321</em>(13), 1304-1305.</li>
+<li>Mize, T. D., Doan, L., &amp; Long, J. S. (2019). A general framework
+for comparing predictions and marginal effects across models.
+<em>Sociological Methodology, 49</em>(1), 152-189.</li>
 </ul>
 </div>
 

@@ -1328,6 +1328,7 @@ if (window.hljs) {
 
 
 
+
 <style type="text/css">
 .main-container {
   max-width: 940px;
@@ -1348,6 +1349,9 @@ button.code-folding-btn:focus {
 }
 summary {
   display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
 }
 pre code {
   padding: 0;
@@ -1510,26 +1514,51 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">Marginal Effects for Location Scale Models</h1>
+<h1 class="title toc-ignore">Marginal Effects for Location Scale
+Models</h1>
 
 </div>
 
 
 <pre class="r"><code>library(knitr)
 library(data.table)
+#&gt; data.table 1.14.2 using 24 threads (see ?getDTthreads).  Latest news: r-datatable.com
 library(brms)
+#&gt; Loading required package: Rcpp
+#&gt; Loading &#39;brms&#39; package (version 2.17.0). Useful instructions
+#&gt; can be found by typing help(&#39;brms&#39;). A more detailed introduction
+#&gt; to the package is available through vignette(&#39;brms_overview&#39;).
+#&gt; 
+#&gt; Attaching package: &#39;brms&#39;
+#&gt; The following object is masked from &#39;package:stats&#39;:
+#&gt; 
+#&gt;     ar
 library(brmsmargins)</code></pre>
-<p>This vignette provides a brief overview of how to calculate marginal effects for Bayesian location scale regression models, involving fixed effects only or mixed effects (i.e., fixed and random) and fit using the <code>brms</code> package.</p>
-<p>A simpler introduction and very brief overview and motivation for marginal effects is available in the vignette for fixed effects only.</p>
-<p>This vignette will focus on Gaussian location scale models fit with <code>brms</code>. Gaussian location scale models in <code>brms</code> have two distributional parameters (dpar):</p>
+<p>This vignette provides a brief overview of how to calculate marginal
+effects for Bayesian location scale regression models, involving fixed
+effects only or mixed effects (i.e., fixed and random) and fit using the
+<code>brms</code> package.</p>
+<p>A simpler introduction and very brief overview and motivation for
+marginal effects is available in the vignette for fixed effects
+only.</p>
+<p>This vignette will focus on Gaussian location scale models fit with
+<code>brms</code>. Gaussian location scale models in <code>brms</code>
+have two distributional parameters (dpar):</p>
 <ul>
-<li>the mean or location (often labeled mu) of the distribution, which is the default parameter and has been examined in the other vignettes.</li>
-<li>the variability or scale (often labeled sigma) of the distribution, which is not modeled as an outcome by default, but can be.</li>
+<li>the mean or location (often labeled mu) of the distribution, which
+is the default parameter and has been examined in the other
+vignettes.</li>
+<li>the variability or scale (often labeled sigma) of the distribution,
+which is not modeled as an outcome by default, but can be.</li>
 </ul>
-<p>Location scale models allow things like assumptions of homogeneity of variance to be relaxed. In repeated measures data, random effects for the scale allow calculating and predicting intraindividual variability (IIV).</p>
+<p>Location scale models allow things like assumptions of homogeneity of
+variance to be relaxed. In repeated measures data, random effects for
+the scale allow calculating and predicting intraindividual variability
+(IIV).</p>
 <div id="ames-for-fixed-effects-location-scale-models" class="section level2">
 <h2>AMEs for Fixed Effects Location Scale Models</h2>
-<p>To start with, we will look at a fixed effects only location scale model. We will simulate a dataset.</p>
+<p>To start with, we will look at a fixed effects only location scale
+model. We will simulate a dataset.</p>
 <pre class="r"><code>d &lt;- withr::with_seed(
   seed = 12345, code = {
     nObs &lt;- 1000L
@@ -1556,22 +1585,25 @@ ls.fe &lt;- brm(bf(
 #&gt; Formula: y ~ 1 + x + grp 
 #&gt;          sigma ~ 1 + x + grp
 #&gt;    Data: d (Number of observations: 1000) 
-#&gt;   Draws: 4 chains, each with iter = 1000; warmup = 0; thin = 1;
+#&gt;   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 #&gt;          total post-warmup draws = 4000
 #&gt; 
 #&gt; Population-Level Effects: 
 #&gt;                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#&gt; Intercept          -0.09      0.13    -0.34     0.15 1.00     4494     3498
-#&gt; sigma_Intercept     1.01      0.03     0.95     1.07 1.00     4690     2937
-#&gt; x                   1.62      0.46     0.74     2.48 1.00     4563     3023
-#&gt; grp                 1.01      0.33     0.36     1.66 1.00     3338     3273
-#&gt; sigma_x             0.85      0.09     0.67     1.02 1.00     5705     2988
-#&gt; sigma_grp           1.01      0.04     0.92     1.09 1.00     4712     2521
+#&gt; Intercept          -0.09      0.12    -0.33     0.15 1.00     4829     3553
+#&gt; sigma_Intercept     1.01      0.03     0.94     1.07 1.00     4696     3023
+#&gt; x                   1.62      0.45     0.75     2.49 1.00     4470     2830
+#&gt; grp                 1.02      0.35     0.34     1.69 1.00     2526     2684
+#&gt; sigma_x             0.85      0.09     0.67     1.02 1.00     4878     3309
+#&gt; sigma_grp           1.01      0.05     0.92     1.09 1.00     4425     2871
 #&gt; 
 #&gt; Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
 #&gt; and Tail_ESS are effective sample size measures, and Rhat is the potential
 #&gt; scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>Now we can use <code>brmsmargins()</code>. By default, it will be for the location parameter, the mean. As this is a Gaussian linear model with no transformations and not interactions, the AMEs are the same as the regression coefficients.</p>
+<p>Now we can use <code>brmsmargins()</code>. By default, it will be for
+the location parameter, the mean. As this is a Gaussian linear model
+with no transformations and not interactions, the AMEs are the same as
+the regression coefficients.</p>
 <p>Here is an example continuous AME.</p>
 <pre class="r"><code>h &lt;- .001
 ame1 &lt;- brmsmargins(
@@ -1583,6 +1615,19 @@ ame1 &lt;- brmsmargins(
 
 knitr::kable(ame1$ContrastSummary, digits = 3)</code></pre>
 <table>
+<colgroup>
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="16%" />
+<col width="14%" />
+<col width="6%" />
+<col width="9%" />
+<col width="6%" />
+<col width="5%" />
+<col width="8%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1600,10 +1645,10 @@ knitr::kable(ame1$ContrastSummary, digits = 3)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">1.615</td>
-<td align="right">1.61</td>
-<td align="right">0.742</td>
-<td align="right">2.485</td>
+<td align="right">1.623</td>
+<td align="right">1.631</td>
+<td align="right">0.746</td>
+<td align="right">2.492</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.95</td>
@@ -1624,6 +1669,19 @@ knitr::kable(ame1$ContrastSummary, digits = 3)</code></pre>
 
 knitr::kable(ame2$ContrastSummary, digits = 3)</code></pre>
 <table>
+<colgroup>
+<col width="8%" />
+<col width="6%" />
+<col width="8%" />
+<col width="6%" />
+<col width="16%" />
+<col width="14%" />
+<col width="6%" />
+<col width="9%" />
+<col width="6%" />
+<col width="5%" />
+<col width="10%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1641,10 +1699,10 @@ knitr::kable(ame2$ContrastSummary, digits = 3)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">1.013</td>
-<td align="right">1.015</td>
-<td align="right">0.362</td>
-<td align="right">1.664</td>
+<td align="right">1.016</td>
+<td align="right">1.02</td>
+<td align="right">0.343</td>
+<td align="right">1.69</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.95</td>
@@ -1655,8 +1713,13 @@ knitr::kable(ame2$ContrastSummary, digits = 3)</code></pre>
 </tr>
 </tbody>
 </table>
-<p>In <code>brms</code> the scale parameter for Gaussian models, <code>sigma</code> uses a log link function. Therefore when back transformed to the original scale, the AMEs will not be the same as the regression coefficients which are on the link scale (log transformed).</p>
-<p>We specify that we want AMEs for <code>sigma</code> by setting: <code>dpar = &quot;sigma&quot;</code>. Here is a continuous example.</p>
+<p>In <code>brms</code> the scale parameter for Gaussian models,
+<code>sigma</code> uses a log link function. Therefore when back
+transformed to the original scale, the AMEs will not be the same as the
+regression coefficients which are on the link scale (log
+transformed).</p>
+<p>We specify that we want AMEs for <code>sigma</code> by setting:
+<code>dpar = &quot;sigma&quot;</code>. Here is a continuous example.</p>
 <pre class="r"><code>h &lt;- .001
 ame3 &lt;- brmsmargins(
   ls.fe,
@@ -1667,6 +1730,19 @@ ame3 &lt;- brmsmargins(
 
 knitr::kable(ame3$ContrastSummary, digits = 3)</code></pre>
 <table>
+<colgroup>
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="16%" />
+<col width="14%" />
+<col width="6%" />
+<col width="9%" />
+<col width="6%" />
+<col width="5%" />
+<col width="8%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1685,9 +1761,9 @@ knitr::kable(ame3$ContrastSummary, digits = 3)</code></pre>
 <tbody>
 <tr class="odd">
 <td align="right">4.463</td>
-<td align="right">4.453</td>
-<td align="right">3.512</td>
-<td align="right">5.457</td>
+<td align="right">4.456</td>
+<td align="right">3.488</td>
+<td align="right">5.442</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.95</td>
@@ -1707,7 +1783,20 @@ knitr::kable(ame3$ContrastSummary, digits = 3)</code></pre>
   effects = &quot;fixedonly&quot;)
 
 knitr::kable(ame4$ContrastSummary, digits = 3)</code></pre>
-<table>
+<table style="width:100%;">
+<colgroup>
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="15%" />
+<col width="14%" />
+<col width="6%" />
+<col width="9%" />
+<col width="6%" />
+<col width="5%" />
+<col width="10%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1725,10 +1814,10 @@ knitr::kable(ame4$ContrastSummary, digits = 3)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">4.902</td>
-<td align="right">4.895</td>
-<td align="right">4.4</td>
-<td align="right">5.426</td>
+<td align="right">4.907</td>
+<td align="right">4.905</td>
+<td align="right">4.409</td>
+<td align="right">5.436</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.95</td>
@@ -1739,13 +1828,18 @@ knitr::kable(ame4$ContrastSummary, digits = 3)</code></pre>
 </tr>
 </tbody>
 </table>
-<p>These results are comparable to the mean difference in standard deviation by <code>grp</code>. Note that in general, these may not closely align. However, in this instance as <code>x</code> and <code>grp</code> were simulated to be uncorrelated, the simple unadjusted results match the regression results closely.</p>
+<p>These results are comparable to the mean difference in standard
+deviation by <code>grp</code>. Note that in general, these may not
+closely align. However, in this instance as <code>x</code> and
+<code>grp</code> were simulated to be uncorrelated, the simple
+unadjusted results match the regression results closely.</p>
 <pre class="r"><code>d[, .(SD = sd(y)), by = grp][, diff(SD)]</code></pre>
 <p>[1] 4.976021</p>
 </div>
 <div id="ames-for-mixed-effects-location-scale-models" class="section level2">
 <h2>AMEs for Mixed Effects Location Scale Models</h2>
-<p>We will simulate some multilevel location scale data for model and fit the mixed effects location scale model.</p>
+<p>We will simulate some multilevel location scale data for model and
+fit the mixed effects location scale model.</p>
 <pre class="r"><code>dmixed &lt;- withr::with_seed(
   seed = 12345, code = {
     nGroups &lt;- 100
@@ -1780,52 +1874,54 @@ ls.me &lt;- brm(bf(
   silent = 2, refresh = 0,
   chains = 4L, cores = 4L, backend = &quot;cmdstanr&quot;)
 #&gt; Compiling Stan program...
-#&gt; 304 of 4000 (8.0%) transitions hit the maximum treedepth limit of 10 or 2^10-1 leapfrog steps.
-#&gt; Trajectories that are prematurely terminated due to this limit will result in slow exploration.
-#&gt; Increasing the max_treedepth limit can avoid this at the expense of more computation.
-#&gt; If increasing max_treedepth does not remove warnings, try to reparameterize the model.</code></pre>
-<p>Note that this model has not achieved good convergence, but as it already took about 6 minutes to run, for the sake of demonstration we continue. In practice, one would want to make adjustments to ensure good convergence and an adequate effective sample size.</p>
+#&gt; Warning: 102 of 4000 (3.0%) transitions hit the maximum treedepth limit of 10.
+#&gt; See https://mc-stan.org/misc/warnings for details.</code></pre>
+<p>Note that this model has not achieved good convergence, but as it
+already took about 6 minutes to run, for the sake of demonstration we
+continue. In practice, one would want to make adjustments to ensure good
+convergence and an adequate effective sample size.</p>
 <pre class="r"><code>summary(ls.me)
-#&gt; Warning: Parts of the model have not converged (some Rhats are &gt; 1.05). Be
-#&gt; careful when analysing the results! We recommend running more iterations and/or
-#&gt; setting stronger priors.
 #&gt;  Family: gaussian 
 #&gt;   Links: mu = identity; sigma = log 
 #&gt; Formula: y ~ 1 + x + (1 + x | ID) 
 #&gt;          sigma ~ 1 + x + (1 + x | ID)
 #&gt;    Data: dmixed (Number of observations: 2000) 
-#&gt;   Draws: 4 chains, each with iter = 1000; warmup = 0; thin = 1;
+#&gt;   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
 #&gt;          total post-warmup draws = 4000
 #&gt; 
 #&gt; Group-Level Effects: 
 #&gt; ~ID (Number of levels: 100) 
 #&gt;                              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-#&gt; sd(Intercept)                    1.20      0.09     1.04     1.38 1.02      204
-#&gt; sd(x)                            0.43      0.04     0.35     0.52 1.01      618
-#&gt; sd(sigma_Intercept)              1.26      0.09     1.09     1.45 1.00      410
-#&gt; sd(sigma_x)                      0.50      0.05     0.40     0.61 1.00     1352
-#&gt; cor(Intercept,x)                -0.40      0.12    -0.62    -0.15 1.01      421
-#&gt; cor(sigma_Intercept,sigma_x)    -0.35      0.11    -0.55    -0.14 1.00     1463
+#&gt; sd(Intercept)                    1.19      0.09     1.03     1.37 1.02      211
+#&gt; sd(x)                            0.42      0.04     0.35     0.51 1.00      862
+#&gt; sd(sigma_Intercept)              1.27      0.09     1.11     1.47 1.01      536
+#&gt; sd(sigma_x)                      0.50      0.05     0.41     0.61 1.00     1569
+#&gt; cor(Intercept,x)                -0.40      0.12    -0.61    -0.16 1.00      577
+#&gt; cor(sigma_Intercept,sigma_x)    -0.36      0.11    -0.55    -0.13 1.00     1516
 #&gt;                              Tail_ESS
-#&gt; sd(Intercept)                     482
-#&gt; sd(x)                            1217
-#&gt; sd(sigma_Intercept)               998
-#&gt; sd(sigma_x)                      2047
-#&gt; cor(Intercept,x)                  950
-#&gt; cor(sigma_Intercept,sigma_x)     1983
+#&gt; sd(Intercept)                     519
+#&gt; sd(x)                            1634
+#&gt; sd(sigma_Intercept)               819
+#&gt; sd(sigma_x)                      2418
+#&gt; cor(Intercept,x)                 1159
+#&gt; cor(sigma_Intercept,sigma_x)     2200
 #&gt; 
 #&gt; Population-Level Effects: 
 #&gt;                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#&gt; Intercept          -2.55      0.12    -2.77    -2.32 1.06      114      293
-#&gt; sigma_Intercept    -1.48      0.12    -1.71    -1.23 1.03      163      392
-#&gt; x                   0.94      0.06     0.82     1.04 1.00      651     1184
-#&gt; sigma_x             0.97      0.06     0.85     1.10 1.00     1117     1807
+#&gt; Intercept          -2.55      0.12    -2.77    -2.33 1.03      105      300
+#&gt; sigma_Intercept    -1.48      0.13    -1.72    -1.22 1.02      217      388
+#&gt; x                   0.94      0.06     0.83     1.06 1.00      572     1550
+#&gt; sigma_x             0.97      0.06     0.85     1.09 1.00     1031     1892
 #&gt; 
 #&gt; Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
 #&gt; and Tail_ESS are effective sample size measures, and Rhat is the potential
 #&gt; scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>We use <code>brmsmargins()</code> similar as for other mixed effects models. For more details see the vignette on marginal effects for mixed effects models.</p>
-<p>Here is an example treating <code>x</code> as continuous using only the fixed effects for the AME for the scale parameter, <code>sigma</code>.</p>
+<p>We use <code>brmsmargins()</code> similar as for other mixed effects
+models. For more details see the vignette on marginal effects for mixed
+effects models.</p>
+<p>Here is an example treating <code>x</code> as continuous using only
+the fixed effects for the AME for the scale parameter,
+<code>sigma</code>.</p>
 <pre class="r"><code>h &lt;- .001
 ame1a.lsme &lt;- brmsmargins(
   ls.me,
@@ -1836,6 +1932,19 @@ ame1a.lsme &lt;- brmsmargins(
 
 knitr::kable(ame1a.lsme$ContrastSummary, digits = 3)</code></pre>
 <table>
+<colgroup>
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="16%" />
+<col width="14%" />
+<col width="6%" />
+<col width="9%" />
+<col width="6%" />
+<col width="5%" />
+<col width="8%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1853,10 +1962,10 @@ knitr::kable(ame1a.lsme$ContrastSummary, digits = 3)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">0.407</td>
+<td align="right">0.408</td>
 <td align="right">0.404</td>
-<td align="right">0.279</td>
-<td align="right">0.567</td>
+<td align="right">0.283</td>
+<td align="right">0.555</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -1867,7 +1976,9 @@ knitr::kable(ame1a.lsme$ContrastSummary, digits = 3)</code></pre>
 </tr>
 </tbody>
 </table>
-<p>Here is the example again, this time integrating out the random effects, which results in a considerable difference in the estimate of the AME.</p>
+<p>Here is the example again, this time integrating out the random
+effects, which results in a considerable difference in the estimate of
+the AME.</p>
 <pre class="r"><code>h &lt;- .001
 ame1b.lsme &lt;- brmsmargins(
   ls.me,
@@ -1878,6 +1989,19 @@ ame1b.lsme &lt;- brmsmargins(
 
 knitr::kable(ame1b.lsme$ContrastSummary, digits = 3)</code></pre>
 <table>
+<colgroup>
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="16%" />
+<col width="14%" />
+<col width="6%" />
+<col width="9%" />
+<col width="6%" />
+<col width="5%" />
+<col width="8%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1895,10 +2019,10 @@ knitr::kable(ame1b.lsme$ContrastSummary, digits = 3)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">0.798</td>
-<td align="right">0.759</td>
-<td align="right">0.382</td>
-<td align="right">1.545</td>
+<td align="right">0.804</td>
+<td align="right">0.766</td>
+<td align="right">0.391</td>
+<td align="right">1.575</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -1909,7 +2033,8 @@ knitr::kable(ame1b.lsme$ContrastSummary, digits = 3)</code></pre>
 </tr>
 </tbody>
 </table>
-<p>Here is an example treating <code>x</code> as discrete, using only the fixed effects.</p>
+<p>Here is an example treating <code>x</code> as discrete, using only
+the fixed effects.</p>
 <pre class="r"><code>ame2a.lsme &lt;- brmsmargins(
   ls.me,
   at = data.frame(x = c(0, 1)),
@@ -1919,6 +2044,19 @@ knitr::kable(ame1b.lsme$ContrastSummary, digits = 3)</code></pre>
 
 knitr::kable(ame2a.lsme$ContrastSummary)</code></pre>
 <table>
+<colgroup>
+<col width="11%" />
+<col width="11%" />
+<col width="11%" />
+<col width="10%" />
+<col width="13%" />
+<col width="12%" />
+<col width="5%" />
+<col width="7%" />
+<col width="5%" />
+<col width="4%" />
+<col width="6%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1936,10 +2074,10 @@ knitr::kable(ame2a.lsme$ContrastSummary)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">0.3776728</td>
-<td align="right">0.3746012</td>
-<td align="right">0.2613735</td>
-<td align="right">0.5223517</td>
+<td align="right">0.3782473</td>
+<td align="right">0.3750965</td>
+<td align="right">0.2673526</td>
+<td align="right">0.509232</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -1950,7 +2088,8 @@ knitr::kable(ame2a.lsme$ContrastSummary)</code></pre>
 </tr>
 </tbody>
 </table>
-<p>Here is the example again, this time integrating out the random effects, likely the more appropriate estimate for most use cases.</p>
+<p>Here is the example again, this time integrating out the random
+effects, likely the more appropriate estimate for most use cases.</p>
 <pre class="r"><code>ame2b.lsme &lt;- brmsmargins(
   ls.me,
   at = data.frame(x = c(0, 1)),
@@ -1960,6 +2099,19 @@ knitr::kable(ame2a.lsme$ContrastSummary)</code></pre>
 
 knitr::kable(ame2b.lsme$ContrastSummary)</code></pre>
 <table>
+<colgroup>
+<col width="11%" />
+<col width="11%" />
+<col width="11%" />
+<col width="10%" />
+<col width="13%" />
+<col width="12%" />
+<col width="5%" />
+<col width="7%" />
+<col width="5%" />
+<col width="4%" />
+<col width="6%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="right">M</th>
@@ -1977,10 +2129,10 @@ knitr::kable(ame2b.lsme$ContrastSummary)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">0.7073939</td>
-<td align="right">0.674368</td>
-<td align="right">0.3101035</td>
-<td align="right">1.323658</td>
+<td align="right">0.7127988</td>
+<td align="right">0.6795497</td>
+<td align="right">0.3513727</td>
+<td align="right">1.382269</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">0.99</td>
@@ -1991,7 +2143,8 @@ knitr::kable(ame2b.lsme$ContrastSummary)</code></pre>
 </tr>
 </tbody>
 </table>
-<p>This also is relatively close calculating all the individual standard deviations and taking their differences, then averaging.</p>
+<p>This also is relatively close calculating all the individual standard
+deviations and taking their differences, then averaging.</p>
 <pre class="r"><code>dmixed[, .(SD = sd(y)), by = .(ID, x)
        ][, .(SDdiff = diff(SD)), by = ID][, mean(SDdiff)]
 #&gt; [1] 0.6281889</code></pre>
